@@ -38,7 +38,8 @@ datExpr_control = t(network_final[,which(substr(names(network_final),2,5) %in% c
 datExpr_treatment = t(network_final[,which(substr(names(network_final),2,5) %in% treatment_index)])
 
 # load("data_expr_allprepare with corrections_top50.RData")
-
+options(stringsAsFactors = FALSE)
+enableWGCNAThreads()
 ##===============================================================================##
 ##                                1.Weighted                                     ## 
 ##===============================================================================##
