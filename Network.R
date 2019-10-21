@@ -79,9 +79,9 @@ diag(adjacency_control)=0
 dissTOM_control = 1-TOMsimilarity(adjacency_control, TOMType="unsigned")
 geneTree_control = hclust(as.dist(dissTOM_control), method ="average")
 #
-adjacency_treatment = adjacency(datExpr14_treatment,power=softPower_b,type="unsigned",corFnc = "bicor");
+adjacency_treatment = adjacency(datExpr_treatment,power=softPower_b,type="unsigned",corFnc = "bicor");
 diag(adjacency_treatment)=0
-dissTOM_treatment = 1-TOMsimilarity(adjacency14_treatment, TOMType="unsigned")
+dissTOM_treatment = 1-TOMsimilarity(adjacency_treatment, TOMType="unsigned")
 geneTree_treatment = hclust(as.dist(dissTOM_treatment), method="average")
 # save the matrix
 save(adjacency_control,dissTOM_control,geneTree_control,
@@ -164,19 +164,19 @@ print("Step5 - mergeing finished")
 #=================================================================================================
 #                              5. plotting heatmap                                            ###
 #=================================================================================================
-pdf("Network_heatmap_plot_all_genes.pdf",height=8,width=16)
-i = 8
+#pdf("Network_heatmap_plot_all_genes.pdf",height=8,width=16)
+#i = 8
 #for (i in c(6:12)){
   # Transform dissTOM with a power to make moderately strong connections more visible in the heatmap
-plotTOM_b = dissTOM14_b_cl^i
+#plotTOM_b = dissTOM14_b_cl^i
   # Set diagonal to NA for a nicer plot
-diag(plotTOM_b) = NA
+#diag(plotTOM_b) = NA
   # Call the plot function
-TOMplot(plotTOM_b, geneTree14_b_cl, moduleColors14_b_cl, 
-        main = "Network heatmap plot bicor - all genes")
+#TOMplot(plotTOM_b, geneTree14_b_cl, moduleColors14_b_cl, 
+#        main = "Network heatmap plot bicor - all genes")
 #}
-dev.off()
-print("Step6 - heapmap created")
+#dev.off()
+#print("Step6 - heapmap created")
 #===============================================================================================
 #                           7. plot cross-condition dendrogram                               ###
 #===============================================================================================
