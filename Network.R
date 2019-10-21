@@ -1,6 +1,12 @@
 ##===============================================================================##
 ##                                0.Data pre                                     ## 
 ##===============================================================================##
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA")
+source("Function_Source.R")
+sample_index =read_excel("Samples_RNA-Seq.xlsx")
+control_index = dplyr::filter(sample_index,TRT == "a") %>% dplyr::select('Tube ID') %>% unlist(use.names = F)
+treatment_index = dplyr::filter(sample_index,TRT == "b") %>%  dplyr::select('Tube ID') %>% unlist(use.names = F)
+
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/counts/")
 #test = read.csv("M6228-1.counts.raw.txt",sep = "\t",header = F) %>% dplyr::slice(1:(n()-5))
 #test2 = read.csv("M6228-2.counts.raw.txt",sep = "\t",header = F) %>% dplyr::slice(1:(n()-5))
@@ -25,12 +31,7 @@ for (i in seq_along(raw_data_index)){
 }
 data_expr_all = data_expr_all[,c(which(substr(raw_data_index,2,5) %in% control_index),which(substr(raw_data_index,2,5) %in% treatment_index))]
 
-#
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA")
-source("Function_Source.R")
-sample_index =read_excel("Samples_RNA-Seq.xlsx")
-control_index = dplyr::filter(sample_index,TRT == "a") %>% dplyr::select('Tube ID') %>% unlist(use.names = F)
-treatment_index = dplyr::filter(sample_index,TRT == "b") %>%  dplyr::select('Tube ID') %>% unlist(use.names = F)
 networkData_final  =  DataPre_C(data_expr_all, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.5)
 network_final = data.frame(networkData_final[[1]])
 datExpr_control = t(network_final[,which(substr(names(network_final),2,5) %in% control_index)])
