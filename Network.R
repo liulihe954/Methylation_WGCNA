@@ -28,7 +28,6 @@ data_expr_all = data_expr_all[,c(which(substr(raw_data_index,2,5) %in% control_i
 #
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA")
 source("Function_Source.R")
-library(readxl)
 sample_index =read_excel("Samples_RNA-Seq.xlsx")
 control_index = dplyr::filter(sample_index,TRT == "a") %>% dplyr::select('Tube ID') %>% unlist(use.names = F)
 treatment_index = dplyr::filter(sample_index,TRT == "b") %>%  dplyr::select('Tube ID') %>% unlist(use.names = F)
