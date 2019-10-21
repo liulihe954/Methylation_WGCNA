@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1571667866049.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1336409366",
+    "id" : "CB9641A3",
+    "lastKnownWriteTime" : 1571667600,
+    "last_content_update" : 1571667600,
+    "path" : "~/Desktop/Methionine/Function_Source.R",
+    "project_path" : "Function_Source.R",
+    "properties" : {
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
