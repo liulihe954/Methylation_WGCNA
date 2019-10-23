@@ -32,13 +32,11 @@ for (i in seq_along(raw_data_index)){
 data_expr_all = data_expr_all[,c(which(substr(raw_data_index,2,5) %in% control_index),which(substr(raw_data_index,2,5) %in% treatment_index))]
 
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Top20")
-networkData_final  =  DataPre_C(data_expr_all, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.8) # select top 20 (1-0.8)
+networkData_final  =  DataPre_C(data_expr_all, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.4) # select top 20 (1-0.8)
 network_final = data.frame(networkData_final[[1]])
 datExpr_control = t(network_final[,which(substr(names(network_final),2,5) %in% control_index)])
 datExpr_treatment = t(network_final[,which(substr(names(network_final),2,5) %in% treatment_index)])
 
-##
-load("data_expr_allprepare_with_corrections_top20.RData")
 ##
 options(stringsAsFactors = FALSE)
 enableWGCNAThreads()
@@ -49,6 +47,7 @@ enableWGCNAThreads()
 # Choose a set of soft-thresholding powers
 powers = c(c(1:10), seq(from = 12, to=30, by=2))
 sft_b_cl = pickSoftThreshold(datExpr_control, powerVector = powers, corFnc = "bicor",verbose = 0)
+#sft_b_cl$powerEstimate
 ### 10 works good. 10 - 0.832 and corresponging mean connectivity
 #softPower_b = min(sft_b_cl$fitIndices[,1][which(sft_b_cl$fitIndices[,2] > 0.9)])
 # pre_checked
