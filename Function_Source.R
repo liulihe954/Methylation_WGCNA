@@ -90,7 +90,7 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct){
   save(networkData_final,
        networkData_normalized_normfactors,
        networkData_normalized,
-       file = paste(deparse(substitute(networkData)),"prepare with corrections","_top",100*(1-perct),".RData",sep = ""))
+       file = paste(deparse(substitute(networkData)),"prepare_with_corrections","_top",100*(1-perct),".RData",sep = ""))
   return(list(Processed_final = networkData_final))
 }
 # Same rationales but FANCY way, remove confounding artifacts
