@@ -42,10 +42,12 @@ NCBI2Reactome_lowest_path_bt[] <- lapply(NCBI2Reactome_lowest_path_bt, function(
 NCBI2Reactome_all_path_bt[] <-   lapply(NCBI2Reactome_all_path_bt, function(x) if(is.factor(x)) as.character(x) else x)
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/")
 ### Container pre
+# Container pre
 Total_list_out_entrez = Sig_list_out_entrez
 Sig_list_out_entrez = Total_list_out_entrez
 TestingSubsetNames = nonpres_modulenames_b
-Sig_list_out = Sig_list_out_ens
+# Run loops
+load("Ensembl2Entrez_Convert.RData")
 # Run loops
 #===========================================================================================
 #                             12. Reactome  enrichment                                    ##
