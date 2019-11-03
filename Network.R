@@ -38,7 +38,6 @@ datExpr_control = t(network_final[,which(substr(names(network_final),2,5) %in% c
 datExpr_treatment = t(network_final[,which(substr(names(network_final),2,5) %in% treatment_index)])
 
 # we have data pre ready!!!
-
 # load("data_expr_allprepare_with_corrections_top50.RData")
 options(stringsAsFactors = FALSE)
 enableWGCNAThreads()
@@ -70,6 +69,7 @@ plot(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5],
 dev.off()
 #save
 save(sft_b_cl,softPower_b,MeanK_b,file = "SoftThres_bicor_control.RData")
+load("SoftThres_bicor_control.RData")
 print("Step2 - soft thre plotted and Rdata saved")
 #======================================================================================
 #                           2 . soft-threshold and dissimilarity                ######
@@ -163,6 +163,7 @@ MEs_control = mergedMEs_control
 # Save module colors and labels for use in subsequent parts
 save(MEs_control, moduleLabels_control, 
      moduleColors_control, geneTree_control, file = "module_colorsNlabels_control.RData")
+load("module_colorsNlabels_control.RData")
 print("Step5 - mergeing finished")
 #=================================================================================================
 #                              5. plotting heatmap                                            ###
@@ -215,7 +216,7 @@ mp = modulePreservation(multiExpr,
 stats = mp$preservation$Z$ref.control$inColumnsAlsoPresentIn.treatment
 Results_mp = stats[order(-stats[,2]),c(1:2)]
 save(mp, file = "modulePreservation_bicor_methionine.RData")
-# load("CoolHeatDay14_modulePreservation.RData")
+load("modulePreservation_bicor_methionine.RData")
 print("Step8 - mp finished and data saved")
 ################ output - shortest - only p summmary  ######################
 write.csv(Results_mp,"module_size_and_preservation_statistics_bicor.csv")
