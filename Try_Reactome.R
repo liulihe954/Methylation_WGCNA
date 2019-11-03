@@ -4,6 +4,7 @@ load("module_colorsNlabels_control.RData")
 load("modulePreservation_bicor_methionine.RData")
 load("data_expr_allprepare with corrections_top50.RData")
 load("Ensembl2Entrez_Convert.RData")
+load("Enrich_Ensentials.RData")
 #### Read in database
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Reactome_db/")
 # lowest_path

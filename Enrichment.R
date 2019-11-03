@@ -16,9 +16,15 @@ TestingModAssign = moduleColors_control
 table(TestingModAssign)
 bg_gene = rownames(networkData_final)
 TestingSubsetNames = nonpres_modulenames_b 
+
 Convert = ConvertNformat(bg_gene,
                          TestingSubsetNames,
                          TestingModAssign,
                          keyword = "Ensembl2Entrez_Convert")
 load("Ensembl2Entrez_Convert.RData")
 
+save(Sig_list_out_entrez,
+     Total_list_out_entrez,
+     nonpres_modulenames_b,
+     Sig_list_out_ens,
+     file = "Enrich_Ensentials.RData")
