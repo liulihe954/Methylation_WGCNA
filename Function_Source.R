@@ -564,7 +564,6 @@ MESH_Enrich = function(total_genes_all,
   DB_List = list()
   library(MeSH.db);library(MeSH.Bta.eg.db);library(tidyverse);library(gage);library(magrittr)
   library(ggplot2);library(biomaRt);library(MeSH.Bta.eg.db)
-  
   ### Three ways to get meshdb
   # 1 download from github: we are gonna use
   #githubURL <- "https://github.com/liulihe954/Repro_Estrous_0918/raw/master/MeshDB.RData"
@@ -576,7 +575,6 @@ MESH_Enrich = function(total_genes_all,
   #  message("Now reload the category you need, it will take a while...")
   #  KEY = keys(MeSH.db, keytype = "MESHID")
   #  List = select(MeSH.db, keys = KEY, columns = columns(MeSH.db), keytype = "MESHID")
-  #  List = select(MeSH.db, keys = KEY[1:3], columns = columns(MeSH.db), keytype = "MESHID")
   #  Match_List = dplyr::select(List, MESHID, MESHTERM)
   #  key_Bta <- keys(MeSH.Bta.eg.db, keytype = "MESHID")
   #  list_Bta = MeSHDbi::select(MeSH.Bta.eg.db, keys = key_Bta, columns = columns(MeSH.Bta.eg.db)[-4], keytype = "MESHID") %>% 
@@ -603,12 +601,15 @@ MESH_Enrich = function(total_genes_all,
   # Get index
   list_Bta = list_Bta[which(list_Bta$MESHCATEGORY %in% MeshCate),]
   #list_Bta = dplyr::filter(list_Bta,MESHCATEGORY%in%MeshCate)
-  genesMesh = unique(list_Bta$MESHTERM)
+  genesMesh = unique(list_Bta$GENEID)
   MeshRecords = unique(list_Bta[,c("MESHID","MESHTERM")]) %>% arrange(MESHID)
   MeshID = na.omit(MeshRecords$MESHID)
   MeshTerm = na.omit(MeshRecords$MESHTERM)
-  #head(unique(MeshID),200)
-  #length(genesGO)
+  for ( p in seq_along(MeshID)){
+    tmp = subset(list_Bta, MESHID == MESHID[p])$GENEID
+    DB_List[[p]] = tmp #
+    names(DB_List)[p]  <- paste(MeshID[p],"-",MeshTerm[p])
+  }
   message("Total Number of module/subsets to check: ",length(TestingSubsetNames))
   message("Total Number of Mesh to check: ",length(MeshID)," with total number of names: ",length(MeshTerm))
   #pdf(paste(trimws(keyword),".pdf",sep = ""))
@@ -631,7 +632,7 @@ MESH_Enrich = function(total_genes_all,
                      findG =  character())
     message("Module size of ",TestingSubsetNames[i],": ", length(sig.genes))
     for(j in c(1:length(MeshID))){
-      if (j%%500 == 0) {message("tryingd on MeshID ",j," - ",MeshID[j]," - ",MeshTerm[j])}
+      if (j%%100 == 0) {message("tryingd on MeshID ",j," - ",MeshID[j]," - ",MeshTerm[j])}
       #target = MeshID[j]
       #gENEs = unique(subset(list_Bta, MESHID == target)$GENEID)
       gENEs = DB_List[[j]]

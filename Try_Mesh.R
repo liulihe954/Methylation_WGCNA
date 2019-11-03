@@ -20,7 +20,7 @@ setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/")
 #                                      11. Mesh enrichment                                   ##
 #==============================================================================================
 #TestingSubsetNames
-MESH_Enrichment_1014 = MESH_Enrich(total_genes_all = Total_list_out_entrez,
+MESH_Enrichment_1102 = MESH_Enrich(total_genes_all = Total_list_out_entrez,
                                    sig_genes_all = Sig_list_out_entrez,
                                    TestingSubsetNames = TestingSubsetNames,
                                    Meshthres = 0.05,
@@ -28,3 +28,4 @@ MESH_Enrichment_1014 = MESH_Enrich(total_genes_all = Total_list_out_entrez,
                                    MeshCate = c("D","G"),
                                    dataset="MeSH.Bta.eg.db",
                                    keyword = "MESH_Enrichment_1102")
+

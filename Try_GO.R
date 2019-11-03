@@ -13,7 +13,7 @@ Sig_list_out = Sig_list_out_ens
 #===========================================================================================
 #                             13. Gene Ontology enrichment                                ##
 #===========================================================================================
-Enrich_Results_thres005_1014 = Go_Enrich_Plot(total_genes_all = Total_list_out_ens,
+Enrich_Results_thres005_1102 = Go_Enrich_Plot(total_genes_all = Total_list_out_ens,
                                               sig_genes_all = Sig_list_out_ens,
                                               TestingSubsetNames = TestingSubsetNames,
                                               GOthres = 0.05,

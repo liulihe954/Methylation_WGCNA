@@ -14,7 +14,7 @@ Sig_list_out = Sig_list_out_ens
 #===========================================================================================
 #                             14. Interpro enrichment                                    ##
 #===========================================================================================
-Interpro_Enrich_Results_thres005_1014 = 
+Interpro_Enrich_Results_thres005_1102 = 
   InterPro_Enrich(total_genes_all = Total_list_out_ens,
                   sig_genes_all = Sig_list_out_ens,
                   TestingSubsetNames = TestingSubsetNames,
