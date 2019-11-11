@@ -35,7 +35,7 @@ data_expr_all = data_expr_all[,c(which(substr(raw_data_index,2,5) %in% control_i
                                  which(substr(raw_data_index,2,5) %in% treatment_index))]
 
 
-setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Net_Confirm")
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
 networkData_final  =  DataPre(data_expr_all, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.4) # select top 20 (1-0.8)
 network_final = data.frame(networkData_final[[1]])
 
@@ -64,7 +64,8 @@ sft_b_cl = pickSoftThreshold(datExpr_control, powerVector = powers, corFnc = "bi
 #softPower_b = min(sft_b_cl$fitIndices[,1][which(sft_b_cl$fitIndices[,2] > 0.9)])
 # pre_checked
 softPower_b = sft_b_cl$powerEstimate
-MeanK_b = sft_b_cl$fitIndices[softPower_b,5]
+softPower_b = 26 
+#MeanK_b = sft_b_cl$fitIndices[softPower_b,]
 # Plot the results of threshold picking:
 pdf(file = "soft_b_threshold.pdf", width = 12, height = 9)
 sizeGrWindow(9,5);cex1 = 0.9;par(mfrow = c(1,2))
