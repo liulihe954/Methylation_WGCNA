@@ -78,3 +78,44 @@ Reactome_Enrich_all_path_1102 = Reactome_Enrich(total_genes_all=Total_list_out_e
                                                 keyword = "Reactome_Enrich_all_path_1102")
 
 
+
+
+############################################################
+### =======                   Reactome         ========== ##
+############################################################
+
+# get loop index
+all_module = character()
+for (i in seq_along(names(GO_results_b))){
+  all_module[i] = unlist(strsplit(names(GO_results_b)[i]," "))[1]
+}
+
+all_data =c("Reactome_Enrich_all_path_1102.RData",
+            "Reactome_Enrich_lowest_path_1102.RData",
+            "Reactome_Enrichment_all_react_1102.RData")
+all_keywords=c("Reactome_all_path_Results_all_1102.xlsx",
+               "Reactome_lowest_path_Results_all_1102.xlsx",
+               "Reactome_all_react_Results_all_1102.xlsx")
+
+
+for (m in c(1:3)){
+  dataset = all_data[m]
+  keyword = all_keywords[m]
+  load(dataset)
+  # loop
+  all_r_a_path_results = list()
+  for (i in seq_along(all_module)){
+    tmp_name = all_module[i]
+    tmp_results = Parse_Results(Reactome_results_b[i], keyword= "-")
+    if (!(dim(tmp_results)[1] == 0)){
+      tmp_results = dplyr::select(tmp_results,-ExternalLoss_total,-InternalLoss_sig) %>% dplyr::arrange(pvalue_r) 
+    }
+    all_r_a_path_results[[i]] = tmp_results
+    names(all_r_a_path_results)[i] = all_module[i]
+  }
+  require(openxlsx)
+  setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/enrich_results")
+  write.xlsx(all_r_a_path_results,file=keyword)
+  setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA")
+}
+

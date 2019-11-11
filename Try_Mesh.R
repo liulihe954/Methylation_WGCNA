@@ -30,3 +30,35 @@ MESH_Enrichment_1102 = MESH_Enrich(total_genes_all = Total_list_out_entrez,
                                    dataset="MeSH.Bta.eg.db",
                                    keyword = "MESH_Enrichment_1102")
 
+
+
+
+############################################################
+### =======                Mesh                ========== ##
+############################################################
+load("MESH_Enrichment_1102.RData")
+# get loop index
+all_module = character()
+for (i in seq_along(names(Mesh_results_b))){
+  all_module[i] = unlist(strsplit(names(Mesh_results_b)[i]," "))[1]
+}
+# loop
+all_mesh_results = list()
+for (i in seq_along(all_module)){
+  tmp_name = all_module[i]
+  tmp_results = Parse_Results(Mesh_results_b[i], keyword= "-")
+  if (!(dim(tmp_results)[1] == 0)){
+    tmp_results = dplyr::select(tmp_results,-ExternalLoss_total,-InternalLoss_sig) %>% dplyr::arrange(pvalue_r) 
+  }
+  all_mesh_results[[i]] = tmp_results
+  names(all_mesh_results)[i] = all_module[i]
+}
+require(openxlsx)
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/enrich_results")
+write.xlsx(all_mesh_results,file = "Mesh_Results_all_1015.xlsx")
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA")
+
+
+
+
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA")
