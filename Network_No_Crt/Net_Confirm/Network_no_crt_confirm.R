@@ -58,12 +58,14 @@ enableWGCNAThreads()
 ## pick soft thresholds
 # Choose a set of soft-thresholding powers
 powers = c(c(1:10), seq(from = 12, to=30, by=2))
-sft_b_cl = pickSoftThreshold(datExpr_control, powerVector = powers, corFnc = "bicor",verbose = 0)
+sft_b_cl = pickSoftThreshold(datExpr_control, 
+                             powerVector = powers,
+                             corFnc = "bicor",verbose = 0)
 ### 10 works good. 10 - 0.832 and corresponging mean connectivity
 #softPower_b = min(sft_b_cl$fitIndices[,1][which(sft_b_cl$fitIndices[,2] > 0.9)])
 # pre_checked
 softPower_b = sft_b_cl$powerEstimate
-#MeanK_b = sft_b_cl$fitIndices[softPower_b,5]
+MeanK_b = sft_b_cl$fitIndices[sft_b_cl$fitIndices$Power == 28,5]
 # Plot the results of threshold picking:
 pdf(file = "soft_b_threshold.pdf", width = 12, height = 9)
 sizeGrWindow(9,5);cex1 = 0.9;par(mfrow = c(1,2))
