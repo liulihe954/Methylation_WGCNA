@@ -36,7 +36,7 @@ data_expr_all = data_expr_all[,c(which(substr(raw_data_index,2,5) %in% control_i
 
 
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
-networkData_final  =  DataPre(data_expr_all, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.4) # select top 20 (1-0.8)
+networkData_final  =  DataPre(data_expr_all, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.5) # select top 20 (1-0.8)
 network_final = data.frame(networkData_final[[1]])
 
 ### now try to confirm results
