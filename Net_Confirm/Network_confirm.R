@@ -16,7 +16,7 @@ setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/counts/")
 raw_data_index = list.files()
 raw_data_index = raw_data_index[-c(1,which(raw_data_index == "M6228-2.counts.raw.txt"),length(raw_data_index))]
 
-# pre raw data - ungrouped
+# pre raw  data - ungrouped
 data_expr_all = data.frame()
 for (i in seq_along(raw_data_index)){
   tmp_name = substr(raw_data_index[i],1,5)
