@@ -24,8 +24,17 @@ library(MeSH.Bta.eg.db)
 # Classical way, networkData(rawdata,genes in rows and samples in cols), 
 #                 n1-n2 (number of ref and treatmnent group)
 #                 perct (the percentage to REMOVE based on VARIANCE across two conditions)            
-DataPre   = function(networkData, cousin = 0.4, n1, n2, perct){
+DataPre   = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count_rmzero){
   #function prepare
+  check_zero = function(networkData,thres_rmzero,count_rmzero){
+    cow_count_index = rep("ok",length(rownames(networkData)))
+    for (i in seq_along(rownames(networkData))){
+      tmp_count = sum(networkData[i,] <= thres_rmzero)
+      if (tmp_count >= count_rmzero){cow_count_index[i] = "out"}
+    }
+    return(cow_count_index)
+  }
+  
   remove_filter = function(networkData,thres){
     ID_meanexpr1 = data.frame(names = rownames(networkData), mean = apply(networkData, MARGIN = 1,mean))
     ID_meanexpr2 = cbind(ID_meanexpr1,percent = ID_meanexpr1$mean/sum(ID_meanexpr1$mean))
@@ -41,6 +50,7 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct){
     Results = list(remove_index=remove_index,networkData_filter = networkData_filter)
     return(Results)
   }
+  
   q_normalize <- function(dat){
     n = nrow(dat)
     p = ncol(dat)
@@ -51,6 +61,7 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct){
     U = rank.dat/(n+1)
     qnorm(U)
   }
+  
   Correct_pca = function(rse_raw,method){
     rse_raw <- t(rse_raw)# transpose data so that rows are samples and columns are gene expression measurements
     mod=matrix(1,nrow=dim(rse_raw)[1],ncol=1)
@@ -64,9 +75,13 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct){
     exprs_corrected_norm <- q_normalize(exprs_corrected)
     return(list(exprs_corrected_norm = t(data.frame(exprs_corrected_norm))))
   }
+  
+  # step 0 - rm too many zeros
+  zero_cm_label = check_zero(networkData,thres_rmzero = 5,count_rmzero = 9)
+  networkData_nozero = data_expr_all_with0[zero_cm_label=="ok",]
   # step 1 - filter out top 40% counts
   ## filter out top 40% counts # function established for future use
-  networkData_filter = remove_filter(networkData,cousin)$networkData_filter
+  networkData_filter = remove_filter(networkData_nozero,cousin)$networkData_filter
   # step 2 - normalization (0s out and normalization)
   remove_index = which(rowSums(networkData_filter) == 0)#;length(remove_index14)
   networkData_nm1 = networkData_filter[-remove_index,]#;dim(networkData_nm1)
@@ -95,7 +110,17 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct){
 }
 # Same rationales but FANCY way, remove confounding artifacts
 # (ref - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1700-9 )
-DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct){
+DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count_rmzero){
+  #function prepare
+  check_zero = function(networkData,thres_rmzero,count_rmzero){
+    cow_count_index = rep("ok",length(rownames(networkData)))
+    for (i in seq_along(rownames(networkData))){
+      tmp_count = sum(networkData[i,] <= thres_rmzero)
+      if (tmp_count >= count_rmzero){cow_count_index[i] = "out"}
+    }
+    return(cow_count_index)
+  }
+  
   #function prepare
   remove_filter = function(networkData,thres){
     ID_meanexpr1 = data.frame(names = rownames(networkData), mean = apply(networkData, MARGIN = 1,mean));
@@ -112,6 +137,7 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct){
     Results = list(remove_index=remove_index,networkData_filter = networkData_filter)
     return(Results)
   }
+  
   q_normalize <- function(dat){
     n = nrow(dat)
     p = ncol(dat)
@@ -122,6 +148,7 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct){
     U = rank.dat/(n+1)
     qnorm(U)
   }
+  
   Correct_pca = function(rse_raw,method){
     rse_raw <- t(rse_raw)# transpose data so that rows are samples and columns are gene expression measurements
     mod=matrix(1,nrow=dim(rse_raw)[1],ncol=1)
@@ -135,6 +162,10 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct){
     exprs_corrected_norm <- q_normalize(exprs_corrected)
     return(list(exprs_corrected_norm = t(data.frame(exprs_corrected_norm))))
   }
+  
+  # step 0 - rm too many zeros
+  zero_cm_label = check_zero(networkData,thres_rmzero = 5,count_rmzero = 9)
+  networkData_nozero = data_expr_all_with0[zero_cm_label=="ok",]
   # step 1 - filter out top 40% counts
   ## filter out top 40% counts # function established for future use
   networkData_filter = remove_filter(networkData,cousin)$networkData_filter

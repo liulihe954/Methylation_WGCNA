@@ -7,7 +7,6 @@ sample_index =read_excel("Samples_RNA-Seq.xlsx")
 control_index = dplyr::filter(sample_index,TRT == "a") %>% dplyr::select('Tube ID') %>% unlist(use.names = F)
 treatment_index = dplyr::filter(sample_index,TRT == "b") %>%  dplyr::select('Tube ID') %>% unlist(use.names = F)
 
-
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/counts/")
 #test = read.csv("M6228-1.counts.raw.txt",sep = "\t",header = F) %>% dplyr::slice(1:(n()-5))
 #test2 = read.csv("M6228-2.counts.raw.txt",sep = "\t",header = F) %>% dplyr::slice(1:(n()-5))

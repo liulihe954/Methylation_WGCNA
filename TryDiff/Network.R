@@ -17,23 +17,26 @@ raw_data_index = list.files()
 raw_data_index = raw_data_index[-c(1,which(raw_data_index == "M6228-2.counts.raw.txt"),length(raw_data_index))]
 
 # pre raw data - ungrouped
-data_expr_all = data.frame()
+data_expr_all_raw = data.frame()
 for (i in seq_along(raw_data_index)){
   tmp_name = substr(raw_data_index[i],1,5)
   #tmp_rownames = read.csv(raw_data_index[i],sep = "\t",header = F) %>% dplyr::slice(1:(n()-5)) %>%  dplyr::select(V1)
   tmp_read = read.csv(raw_data_index[i],sep = "\t",header = F) %>% dplyr::slice(1:(n()-5)) %>% column_to_rownames('V1')
   if (i == 1){
-    data_expr_all = data.frame(tmp_name = tmp_read)
-    colnames(data_expr_all) = tmp_name
+    data_expr_all_raw = data.frame(tmp_name = tmp_read)
+    colnames(data_expr_all_raw) = tmp_name
   } else {
-    data_expr_all = cbind(data_expr_all,tmp_read)
-    colnames(data_expr_all)[i] = tmp_name
+    data_expr_all_raw = cbind(data_expr_all_raw,tmp_read)
+    colnames(data_expr_all_raw)[i] = tmp_name
   }
 }
-data_expr_all = data_expr_all[,c(which(substr(raw_data_index,2,5) %in% control_index),which(substr(raw_data_index,2,5) %in% treatment_index))]
+data_expr_all_with0 = data_expr_all_raw[,c(which(substr(raw_data_index,2,5) %in% control_index),which(substr(raw_data_index,2,5) %in% treatment_index))]
+dim(data_expr_all_with0)
 
-setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA")
-networkData_final  =  DataPre_C(data_expr_all, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.5)
+##########################################################################
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/TryDiff")
+networkData_final  =  DataPre_C(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.5,
+                                thres_rmzero = 5,count_rmzero = 9)
 network_final = data.frame(networkData_final[[1]])
 datExpr_control = t(network_final[,which(substr(names(network_final),2,5) %in% control_index)])
 datExpr_treatment = t(network_final[,which(substr(names(network_final),2,5) %in% treatment_index)])
