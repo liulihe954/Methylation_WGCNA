@@ -34,7 +34,7 @@ data_expr_all_with0 = data_expr_all_raw[,c(which(substr(raw_data_index,2,5) %in%
 dim(data_expr_all_with0)
 
 ##########################################################################
-setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/TryDiff")
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/TryDiff/Network_p4")
 networkData_final  =  DataPre_C(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.5,
                                 thres_rmzero = 5,count_rmzero = 9)
 network_final = data.frame(networkData_final[[1]])

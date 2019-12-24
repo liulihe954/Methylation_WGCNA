@@ -34,7 +34,7 @@ data_expr_all_with0 = data_expr_all_raw[,c(which(substr(raw_data_index,2,5) %in%
 dim(data_expr_all_with0)
 
 ##########################################################################
-setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/TryDiff")
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/TryDiff/Network_p15")
 networkData_final  =  DataPre_C(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.5,
                                 thres_rmzero = 5,count_rmzero = 9)
 network_final = data.frame(networkData_final[[1]])
@@ -147,7 +147,7 @@ pdf("Clustering_of_module_eigengenes_bicor_control.pdf",height=8,width=16)
 plot(METree_control, main = "Clustering of module eigengenes bicor control",
      xlab = "", sub = "")
 ## We choose a height cut of 0.2, corresponding to correlation of 0.80, to merge
-MEDissThres = 0.4
+MEDissThres = 0.15
 # Plot the cut line into the dendrogram
 abline(h = MEDissThres, col = "red")
 dev.off()
