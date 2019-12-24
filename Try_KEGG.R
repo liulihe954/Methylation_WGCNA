@@ -19,10 +19,6 @@ Kegg_Enrichment_pval005_1102 = Kegg_Enrich_Plot(sig_genes_all = Sig_list_out_ent
                                                 id.type = "kegg",
                                                 Sig_list_out =Sig_list_out,
                                                 keyword = "Kegg_Enrichment_1102")
-
-
-
-
 ############################################################
 ### =======                KEGG                ========== ##
 ############################################################
