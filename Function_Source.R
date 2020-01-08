@@ -34,7 +34,6 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
     }
     return(cow_count_index)
   }
-  
   remove_filter = function(networkData,thres){
     ID_meanexpr1 = data.frame(names = rownames(networkData), mean = apply(networkData, MARGIN = 1,mean))
     ID_meanexpr2 = cbind(ID_meanexpr1,percent = ID_meanexpr1$mean/sum(ID_meanexpr1$mean))
@@ -50,34 +49,10 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
     Results = list(remove_index=remove_index,networkData_filter = networkData_filter)
     return(Results)
   }
-  
-  q_normalize <- function(dat){
-    n = nrow(dat)
-    p = ncol(dat)
-    rank.dat =  dat # matrix for ranking
-    for (i in 1:p){
-      rank.dat[,i] = rank(dat[,i])
-    }
-    U = rank.dat/(n+1)
-    qnorm(U)
-  }
-  
-  Correct_pca = function(rse_raw,method){
-    rse_raw <- t(rse_raw)# transpose data so that rows are samples and columns are gene expression measurements
-    mod=matrix(1,nrow=dim(rse_raw)[1],ncol=1)
-    colnames(mod)="Intercept"
-    ## num.sv requires data matrix with features(genes) in the rows and samples in the column
-    nsv=num.sv(t(rse_raw), mod, method = method)
-    print(paste("Number of PCs estimated to be removed:", nsv))
-    ## PC residualization of gene expression data using sva_network. Rows correspond to samples, Columns correspond to features
-    exprs_corrected = sva_network(rse_raw, nsv)
-    ## Quantile normalize the corrected gene expression measurements such that each expression of every gene follows a gaussian distribution
-    exprs_corrected_norm <- q_normalize(exprs_corrected)
-    return(list(exprs_corrected_norm = t(data.frame(exprs_corrected_norm))))
-  }
-  
   # step 0 - rm too many zeros
-  zero_cm_label = check_zero(networkData,thres_rmzero = 5,count_rmzero = 9)
+  zero_cm_label = check_zero(networkData,
+                             thres_rmzero = thres_rmzero,
+                             count_rmzero = count_rmzero)
   networkData_nozero = data_expr_all_with0[zero_cm_label=="ok",]
   # step 1 - filter out top 40% counts
   ## filter out top 40% counts # function established for future use
@@ -110,6 +85,7 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
 }
 # Same rationales but FANCY way, remove confounding artifacts
 # (ref - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1700-9 )
+
 DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count_rmzero){
   #function prepare
   check_zero = function(networkData,thres_rmzero,count_rmzero){
