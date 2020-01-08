@@ -157,10 +157,15 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
   networkData_log2 = log2(networkData_normalized+2)
   # step 4 - filter out bottom xx% variation
   # select most var
+  # no crt
+  networkData_normalized$variance = apply(networkData_normalized, 1, var)
+  networkData_50var_nocrt = networkData_normalized[networkData_normalized$variance >= quantile(networkData_normalized$variance,c(perct)), ] #50% most variable genes
+  networkData_50var_nocrt$variance <- NULL
+  # crt
   networkData_log2$variance = apply(networkData_log2,1,var)
   networkData_log2_50var = networkData_log2[networkData_log2$variance >= quantile(networkData_log2$variance,c(perct)),] 
   networkData_log2_50var$variance <- NULL
-  #dim(networkData14_log2_50var)
+
   # step 5 - pca correction 
   networkData_correction = Correct_pca(networkData_log2_50var,"leek")
   networkData_final = data.frame(networkData_correction$exprs_corrected_norm); 
@@ -173,7 +178,7 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
   if (Correct == T) {return(list(Corrected_log2_PC = networkData_final))}
   else if (Correct == F){
     message('pc correction not applied')
-    return(list(networkData_final_no_crt = networkData_normalized))}
+    return(list(networkData_final_no_crt = networkData_50var_nocrt))}
   else {message("please specify pc data correction option - Correct = T or F")}
 }
 
