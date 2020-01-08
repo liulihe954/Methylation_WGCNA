@@ -1,4 +1,4 @@
-# Try Diff - 1219
+# Try Diff - 0108
 ##===============================================================================##
 ##                                0.Data pre                                     ## 
 ##===============================================================================##
@@ -35,8 +35,8 @@ dim(data_expr_all_with0)
 
 ##########################################################################
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
-networkData_final  =  DataPre(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.5,
-                                thres_rmzero = 5,count_rmzero = 9)
+networkData_final  =  DataPre_C(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.5,
+                                thres_rmzero = 5,count_rmzero = 9,Correct=F)
 network_final = data.frame(networkData_final[[1]])
 #dim(datExpr_treatment)
 datExpr_control = t(network_final[,which(substr(names(network_final),2,5) %in% control_index)])

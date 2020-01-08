@@ -171,7 +171,9 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
        networkData_normalized,
        file = paste(deparse(substitute(networkData)),"prepare with corrections","_top",100*(1-perct),".RData",sep = ""))
   if (Correct == T) {return(list(Corrected_log2_PC = networkData_final))}
-  else if (Correct == F){return(list(networkData_final_no_crt = networkData_normalized))}
+  else if (Correct == F){
+    message('pc correction not applied')
+    return(list(networkData_final_no_crt = networkData_normalized))}
   else {message("please specify pc data correction option - Correct = T or F")}
 }
 
