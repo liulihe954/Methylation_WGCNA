@@ -86,7 +86,7 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
 # Same rationales but FANCY way, remove confounding artifacts
 # (ref - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1700-9 )
 
-DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count_rmzero){
+DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count_rmzero,Correct = T){
   #function prepare
   check_zero = function(networkData,thres_rmzero,count_rmzero){
     cow_count_index = rep("ok",length(rownames(networkData)))
@@ -96,7 +96,6 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
     }
     return(cow_count_index)
   }
-  
   #function prepare
   remove_filter = function(networkData,thres){
     ID_meanexpr1 = data.frame(names = rownames(networkData), mean = apply(networkData, MARGIN = 1,mean));
@@ -113,7 +112,6 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
     Results = list(remove_index=remove_index,networkData_filter = networkData_filter)
     return(Results)
   }
-  
   q_normalize <- function(dat){
     n = nrow(dat)
     p = ncol(dat)
@@ -124,7 +122,6 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
     U = rank.dat/(n+1)
     qnorm(U)
   }
-  
   Correct_pca = function(rse_raw,method){
     rse_raw <- t(rse_raw)# transpose data so that rows are samples and columns are gene expression measurements
     mod=matrix(1,nrow=dim(rse_raw)[1],ncol=1)
@@ -171,7 +168,9 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
        networkData_normalized_normfactors,
        networkData_normalized,
        file = paste(deparse(substitute(networkData)),"prepare with corrections","_top",100*(1-perct),".RData",sep = ""))
-  return(list(Corrected_log2_PC = networkData_final))
+  if (Correct = T){return(list(Corrected_log2_PC = networkData_final))}
+  else if (Correct = F){return(list(networkData_final_no_crt = networkData_normalized))}
+  else {message("please specify pc data correction option - Correct = T or F")}
 }
 
 
@@ -997,4 +996,4 @@ ConvertNformat = function(bg_gene,
   message("Nice! Conversion finished")
 }
 
-print("update 1223 10pm")
+print("update 0108 4pm")
