@@ -46,36 +46,39 @@ datExpr_treatment = t(network_final[,which(substr(names(network_final),2,5) %in%
 # load("data_expr_allprepare_with_corrections_top50.RData")
 options(stringsAsFactors = FALSE)
 enableWGCNAThreads()
+
+cor(datExpr_control[,c(1)],datExpr_control[,c(4369)])
 ##===============================================================================##
 ##                                1.Weighted                                     ## 
 ##===============================================================================##
 ## pick soft thresholds
 # Choose a set of soft-thresholding powers
 powers = c(c(1:10), seq(from = 12, to=30, by=2))
-#corFnc = "bicor",
-sft_b_cl = pickSoftThreshold(datExpr_control, powerVector = powers, verbose = 0)
+sft_b_cl = pickSoftThreshold(datExpr_control,powerVector = powers, verbose = 0)
+#sft_b_cl = pickSoftThreshold(datExpr_control,corFnc = "bicor",powerVector = powers, verbose = 0)
 ### 10 works good. 10 - 0.832 and corresponging mean connectivity
 #softPower_b = min(sft_b_cl$fitIndices[,1][which(sft_b_cl$fitIndices[,2] > 0.9)])
 # pre_checked
-softPower_b = sft_b_cl$powerEstimate
-MeanK_b = sft_b_cl$fitIndices[softPower_b,5]
+softPower_b = 26
+#softPower_b = sft_b_cl$powerEstimate
+MeanK_b = sft_b_cl$fitIndices[18,5]
 # Plot the results of threshold picking:
 pdf(file = "soft_b_threshold.pdf", width = 12, height = 9)
 sizeGrWindow(9,5);cex1 = 0.9;par(mfrow = c(1,2))
 # Scale-free topology fit index as a function of the soft-thresholding power
 plot(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
-     xlab="Soft Threshold bicor (power) control",ylab="Scale Free Topology Model Fit bicor, unsigned R^2 control",type="n",
-     main = paste("Scale independence bicor control"));text(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
+     xlab="Soft Threshold (power) control",ylab="Scale Free Topology Model Fit, unsigned R^2 control",type="n",
+     main = paste("Scale independence control"));text(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
                                                             labels=powers,cex=cex1,col="red");abline(h=0.80,col="red")
 # this line corresponds to using an R^2 cut-off of h
 # Mean connectivity as a function of the soft-thresholding power
 plot(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5],
-     xlab="Soft Threshold bicor (power) control",ylab="Mean Connectivity bicor control",type="n",
-     main = paste("Mean connectivity bicor control"));text(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5], labels=powers, cex=cex1,col="red");abline(h=MeanK_b,col="red")
+     xlab="Soft Threshold (power) control",ylab="Mean Connectivity control",type="n",
+     main = paste("Mean connectivity control"));text(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5], labels=powers, cex=cex1,col="red");abline(h=MeanK_b,col="red")
 dev.off()
 #save
-save(sft_b_cl,softPower_b,MeanK_b,file = "SoftThres_bicor_control.RData")
-load("SoftThres_bicor_control.RData")
+save(sft_b_cl,softPower_b,MeanK_b,file = "SoftThres_control.RData")
+load("SoftThres_control.RData")
 print("Step2 - soft thre plotted and Rdata saved")
 #======================================================================================
 #                           2 . soft-threshold and dissimilarity                ######
@@ -83,12 +86,12 @@ print("Step2 - soft thre plotted and Rdata saved")
 # ref - cl; test - ht
 # dim(datExpr14_ht);dim(datExpr14_cl)
 # Peaerson Cor
-adjacency_control = adjacency(datExpr_control,power=softPower_b,type="unsigned",corFnc = "bicor");
+adjacency_control = adjacency(datExpr_control,power=softPower_b,type="unsigned");
 diag(adjacency_control)=0
 dissTOM_control = 1-TOMsimilarity(adjacency_control, TOMType="unsigned")
 geneTree_control = hclust(as.dist(dissTOM_control), method ="average")
 #
-adjacency_treatment = adjacency(datExpr_treatment,power=softPower_b,type="unsigned",corFnc = "bicor");
+adjacency_treatment = adjacency(datExpr_treatment,power=softPower_b,type="unsigned");
 diag(adjacency_treatment)=0
 dissTOM_treatment = 1-TOMsimilarity(adjacency_treatment, TOMType="unsigned")
 geneTree_treatment = hclust(as.dist(dissTOM_treatment), method="average")
@@ -100,10 +103,10 @@ print("Step3 - adj matrix created and rdata saved")
 #                                 3.  plot trees                                  ######
 #========================================================================================
 # cor
-pdf("dendrogram_bicor.pdf",     height=6,width=16)
+pdf("dendrogram.pdf",     height=6,width=16)
 par(mfrow=c(1,2))
-plot(geneTree_control,xlab="",sub="",main="Gene clustering on TOM-based dissimilarity bicor (control))",labels=FALSE,hang=0.04);
-plot(geneTree_treatment,xlab="",sub="",main="Gene clustering on TOM-based dissimilarity bicor (treatment)",labels=FALSE,hang=0.04);
+plot(geneTree_control,xlab="",sub="",main="Gene clustering on TOM-based dissimilarity (control))",labels=FALSE,hang=0.04);
+plot(geneTree_treatment,xlab="",sub="",main="Gene clustering on TOM-based dissimilarity (treatment)",labels=FALSE,hang=0.04);
 dev.off()
 print("Step4 - dissmi plottd and rdata saved")
 #=========================================================================================
@@ -122,13 +125,13 @@ table(dynamicMods_control)
 dynamicColors_control = labels2colors(dynamicMods_control)
 # Plot the dendrogram and colors underneath
 sizeGrWindow(8,16)
-pdf("dendrogram_bicor_control_nomg.pdf",height=8,width=16)
+pdf("dendrogram_control_nomg.pdf",height=8,width=16)
 plotDendroAndColors(geneTree_control, 
                     dynamicColors_control, 
-                    "Dynamic_Tree_Cut_bicor_control_nomg",
+                    "Dynamic_Tree_Cut_control_nomg",
                     dendroLabels = FALSE, hang = 0.03,
                     addGuide = TRUE, guideHang = 0.05,
-                    main = "Gene dendrogram and module colors bicor control nomg")
+                    main = "Gene dendrogram and module colors control nomg")
 dev.off()
 print("Step5 - cutting finished")
 ### Merging of modules whose expression profiles are very similar
@@ -144,11 +147,11 @@ MEDiss_control = 1 - cor(MEs_control)
 METree_control = hclust(as.dist(MEDiss_control), method = "average");
 # Plot the result of module eigengenes
 sizeGrWindow(8,16)
-pdf("Clustering_of_module_eigengenes_bicor_control.pdf",height=8,width=16)
-plot(METree_control, main = "Clustering of module eigengenes bicor control",
+pdf("Clustering_of_module_eigengenes_control.pdf",height=8,width=16)
+plot(METree_control, main = "Clustering of module eigengenes control",
      xlab = "", sub = "")
 ## We choose a height cut of 0.2, corresponding to correlation of 0.80, to merge
-MEDissThres = 0.3
+MEDissThres = 0.2
 # Plot the cut line into the dendrogram
 abline(h = MEDissThres, col = "red")
 dev.off()
@@ -191,11 +194,11 @@ print("Step5 - mergeing finished")
 #===============================================================================================
 #                           7. plot cross-condition dendrogram                               ###
 #===============================================================================================
-pdf("Gene_dendrogram_cross_condition_bicor.pdf",height=8,width=16)
+pdf("Gene_dendrogram_cross_condition.pdf",height=8,width=16)
 plotDendroAndColors(geneTree_control, moduleLabels_control, "Modules", dendroLabels=F, hang=0.03, addGuide=TRUE,
-                    guideHang=0.05, main="Gene dendrogram and module colors bicor (control)")
+                    guideHang=0.05, main="Gene dendrogram and module colors (control)")
 plotDendroAndColors(geneTree_treatment, moduleLabels_control, "Modules", dendroLabels=F,hang=0.03, addGuide=TRUE,
-                    guideHang=0.05, main="Gene dendrogram and module colors bicor (treatment)")
+                    guideHang=0.05, main="Gene dendrogram and module colors (treatment)")
 dev.off()
 print("Step7 - cross condition dendrogram created")
 #=================================================================================================
@@ -213,7 +216,7 @@ mp = modulePreservation(multiExpr,
                         multiColor,
                         referenceNetworks=1,
                         verbose=3,
-                        corFnc = "bicor",
+                        #corFnc = "bicor",
                         networkType="unsigned", nPermutations = 2000,
                         maxGoldModuleSize = 500, maxModuleSize = 500,
                         calculateQvalue = T,
@@ -222,11 +225,11 @@ mp = modulePreservation(multiExpr,
                         indent = 3)
 stats = mp$preservation$Z$ref.control$inColumnsAlsoPresentIn.treatment
 Results_mp = stats[order(-stats[,2]),c(1:2)]
-save(mp, file = "modulePreservation_bicor_methionine.RData")
-load("modulePreservation_bicor_methionine.RData")
+save(mp, file = "modulePreservation_methionine.RData")
+load("modulePreservation_methionine.RData")
 print("Step8 - mp finished and data saved")
 ################ output - shortest - only p summmary  ######################
-write.csv(Results_mp,"module_size_and_preservation_statistics_bicor.csv")
+write.csv(Results_mp,"module_size_and_preservation_statistics.csv")
 ################ output - shortest - only p summmary  ######################
 # specify the reference and the test networks
 ref=1; test = 2
@@ -242,8 +245,8 @@ Z.PreservationStats=mp$preservation$Z[[ref]][[test]]
 # Look at the observed preservation statistics
 # Obs.PreservationStats
 # Z statistics from the permutation test analysis Z.PreservationStats
-write.csv(Obs.PreservationStats,"Obs_PreservationStats_bicor.csv")
-write.csv(Z.PreservationStats,"Z_PreservationStats_bicor.csv")
+write.csv(Obs.PreservationStats,"Obs_PreservationStats.csv")
+write.csv(Z.PreservationStats,"Z_PreservationStats.csv")
 print("Step8 - preservation statistics calculated and saved")
 
 #===========================================================================================
@@ -261,16 +264,16 @@ point.label = modColors[selectModules]
 medianRank=Obs.PreservationStats$medianRank.pres
 Zsummary=Z.PreservationStats$Zsummary.pres
 #
-pdf("medianRank_Zsummary_versus_module_size_bicor.pdf",height = 8, width = 16)
+pdf("medianRank_Zsummary_versus_module_size.pdf",height = 8, width = 16)
 par(mfrow=c(1,2),mar = c(4.5,4.5,2.5,1))
 # plot medianRank versus module size
 plot(moduleSize[selectModules],medianRank[selectModules],col=1,
-     bg=modColors[selectModules], pch = 21,main="medianRank Preservation bicor",
+     bg=modColors[selectModules], pch = 21,main="medianRank Preservation",
      cex = 2, ylab ="medianRank",xlab="Module size", log="x")
 labelPoints(moduleSize[selectModules],medianRank[selectModules],point.label,cex=1,offs=0.03)
 # plot Zsummary versus module size
 plot(moduleSize[selectModules],Zsummary[selectModules], col = 1,
-     bg=modColors[selectModules],pch = 21,main="Zsummary Preservation bicor",
+     bg=modColors[selectModules],pch = 21,main="Zsummary Preservation",
      cex=2,ylab ="Zsummary", xlab = "Module size", log = "x")
 labelPoints(moduleSize[selectModules],Zsummary[selectModules],point.label,cex=1,offs=0.03)
 # Add threshold lines for Zsummary
@@ -299,10 +302,10 @@ text = modColors[plotMods];
 plotData_b = cbind(mp$preservation$observed[[ref]][[test]][,2],
                    mp$preservation$Z[[ref]][[test]][,2])
 # Main titles for the plot
-mains = c("Preservation Median rank bicor", "Preservation Zsummary bicor")
+mains = c("Preservation Median rank", "Preservation Zsummary")
 # Start the plot: open a suitably sized graphical window and set sectioning and margins.
 # Plot each Z statistic in a separate plot.
-pdf("all_module_preservation_statistics_nested_bicor.pdf",height = 8, width = 16)
+pdf("all_module_preservation_statistics_nested.pdf",height = 8, width = 16)
 par(mfrow = c(4,5))
 for (s in 1:ncol(statsZ)){
   min = min(statsZ[plotMods, s], na.rm = TRUE)
