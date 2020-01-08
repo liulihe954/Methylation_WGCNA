@@ -86,7 +86,9 @@ DataPre   = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
 # Same rationales but FANCY way, remove confounding artifacts
 # (ref - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1700-9 )
 
-DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count_rmzero,Correct = T){
+DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
+                     thres_rmzero,count_rmzero,
+                     Correct = T){
   #function prepare
   check_zero = function(networkData,thres_rmzero,count_rmzero){
     cow_count_index = rep("ok",length(rownames(networkData)))
@@ -168,8 +170,8 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count
        networkData_normalized_normfactors,
        networkData_normalized,
        file = paste(deparse(substitute(networkData)),"prepare with corrections","_top",100*(1-perct),".RData",sep = ""))
-  if (Correct = T){return(list(Corrected_log2_PC = networkData_final))}
-  else if (Correct = F){return(list(networkData_final_no_crt = networkData_normalized))}
+  if (Correct == T) {return(list(Corrected_log2_PC = networkData_final))}
+  else if (Correct == F){return(list(networkData_final_no_crt = networkData_normalized))}
   else {message("please specify pc data correction option - Correct = T or F")}
 }
 
