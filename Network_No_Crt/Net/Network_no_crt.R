@@ -34,9 +34,10 @@ data_expr_all_with0 = data_expr_all_raw[,c(which(substr(raw_data_index,2,5) %in%
 
 ##########################################################################
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
-networkData_final  =  DataPre_C(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10, perct = 0.5,
-                                thres_rmzero = 5,count_rmzero = 9,Correct=F)
+networkData_final  =  DataPre_C(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10,
+                                perct = 0.5,thres_rmzero = 5,count_rmzero = 9,Correct='N')
 network_final = data.frame(networkData_final[[1]])
+
 #dim(datExpr_treatment)
 datExpr_control = t(network_final[,which(substr(names(network_final),2,5) %in% control_index)])
 datExpr_treatment = t(network_final[,which(substr(names(network_final),2,5) %in% treatment_index)])
@@ -57,9 +58,11 @@ sft_b_cl = pickSoftThreshold(datExpr_control,powerVector = powers, verbose = 0)
 ### 10 works good. 10 - 0.832 and corresponging mean connectivity
 #softPower_b = min(sft_b_cl$fitIndices[,1][which(sft_b_cl$fitIndices[,2] > 0.9)])
 # pre_checked
-softPower_b = 26
+sft_out = sft_b_cl$fitIndices
+sft_select = which(sft_out[,2] >= 0.8)[1]
+softPower_b = sft_out[sft_select,1]
 #softPower_b = sft_b_cl$powerEstimate
-MeanK_b = sft_b_cl$fitIndices[18,5]
+MeanK_b = sft_b_cl$fitIndices[sft_select,5]
 # Plot the results of threshold picking:
 pdf(file = "soft_b_threshold.pdf", width = 12, height = 9)
 sizeGrWindow(9,5);cex1 = 0.9;par(mfrow = c(1,2))
@@ -210,6 +213,11 @@ multiExpr = list(control=list(data = adjacency_control),
 multiColor = list(control= moduleColors_control)
 names(multiExpr) = setLabels
 
+test = goodSamplesGenes(datExpr_control)$goodGenes
+which(test==FALSE)
+datExpr_control[,2542]
+datExpr_treatment[,2542]
+
 # permutation
 mp = modulePreservation(multiExpr,
                         multiColor,
@@ -222,6 +230,7 @@ mp = modulePreservation(multiExpr,
                         calculateCor.kIMall = T,
                         calculateClusterCoeff = T,
                         indent = 3)
+
 stats = mp$preservation$Z$ref.control$inColumnsAlsoPresentIn.treatment
 Results_mp = stats[order(-stats[,2]),c(1:2)]
 save(mp, file = "modulePreservation_methionine.RData")

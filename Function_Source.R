@@ -28,7 +28,7 @@ library(MeSH.Bta.eg.db)
 # (ref - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1700-9 )
 DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
                      thres_rmzero = 5,count_rmzero,
-                     Correct = T){
+                     Correct = 'Y'){
   #function prepare
   check_zero = function(networkData,thres_rmzero,count_rmzero){
     cow_count_index = rep("ok",length(rownames(networkData)))
@@ -110,20 +110,20 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
   networkData_correction = Correct_pca(networkData_log2_50var,"leek")
   networkData_final = data.frame(networkData_correction$exprs_corrected_norm); 
   names(networkData_final) = names(networkData_log2_50var)
-  if (Correct == T) {
+  if (Correct == "Y") {
+    return(list(Corrected_log2_PC = networkData_final))
     save(networkData_final,
          networkData_log2_50var,
          networkData_normalized_normfactors,
          networkData_normalized,
-         file = paste(deparse(substitute(networkData)),"prepare_with_corrections","_top",100*(1-perct),".RData",sep = ""))
-    return(list(Corrected_log2_PC = networkData_final))}
-  else if (Correct == F){
+         file = paste(deparse(substitute(networkData)),"prepare_with_corrections","_top",100*(1-perct),".RData",sep = ""))}
+  else if (Correct == "N"){
+    message('pc correction not applied')
+    return(list(networkData_50var_no_crt = networkData_50var_nocrt))
     save(networkData_50var_nocrt,
          networkData_normalized_normfactors,
          networkData_normalized,
-         file = paste(deparse(substitute(networkData)),"prepare_no_corrections","_top",100*(1-perct),".RData",sep = ""))
-    message('pc correction not applied')
-    return(list(networkData_50var_no_crt = networkData_50var_nocrt))}
+         file = paste(deparse(substitute(networkData)),"prepare_no_corrections","_top",100*(1-perct),".RData",sep = ""))}
   else {message("please specify pc data correction option - Correct = T or F")}
 }
 
