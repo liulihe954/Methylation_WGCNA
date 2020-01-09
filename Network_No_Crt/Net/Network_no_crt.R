@@ -31,7 +31,6 @@ for (i in seq_along(raw_data_index)){
   }
 }
 data_expr_all_with0 = data_expr_all_raw[,c(which(substr(raw_data_index,2,5) %in% control_index),which(substr(raw_data_index,2,5) %in% treatment_index))]
-dim(data_expr_all_with0)
 
 ##########################################################################
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
@@ -47,7 +46,6 @@ datExpr_treatment = t(network_final[,which(substr(names(network_final),2,5) %in%
 options(stringsAsFactors = FALSE)
 enableWGCNAThreads()
 
-cor(datExpr_control[,c(1)],datExpr_control[,c(4369)])
 ##===============================================================================##
 ##                                1.Weighted                                     ## 
 ##===============================================================================##
@@ -211,6 +209,7 @@ multiExpr = list(control=list(data = adjacency_control),
                  treatment=list(data = adjacency_treatment))
 multiColor = list(control= moduleColors_control)
 names(multiExpr) = setLabels
+
 # permutation
 mp = modulePreservation(multiExpr,
                         multiColor,

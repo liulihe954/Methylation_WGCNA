@@ -24,68 +24,8 @@ library(MeSH.Bta.eg.db)
 # Classical way, networkData(rawdata,genes in rows and samples in cols), 
 #                 n1-n2 (number of ref and treatmnent group)
 #                 perct (the percentage to REMOVE based on VARIANCE across two conditions)            
-DataPre   = function(networkData, cousin = 0.4, n1, n2, perct,thres_rmzero,count_rmzero){
-  #function prepare
-  check_zero = function(networkData,thres_rmzero,count_rmzero){
-    cow_count_index = rep("ok",length(rownames(networkData)))
-    for (i in seq_along(rownames(networkData))){
-      tmp_count = sum(networkData[i,] <= thres_rmzero)
-      if (tmp_count >= count_rmzero){cow_count_index[i] = "out"}
-    }
-    return(cow_count_index)
-  }
-  remove_filter = function(networkData,thres){
-    ID_meanexpr1 = data.frame(names = rownames(networkData), mean = apply(networkData, MARGIN = 1,mean))
-    ID_meanexpr2 = cbind(ID_meanexpr1,percent = ID_meanexpr1$mean/sum(ID_meanexpr1$mean))
-    ID_meanexpr3 = ID_meanexpr2[order(ID_meanexpr2$mean,decreasing = T),]
-    accumulative = numeric(nrow(ID_meanexpr3))
-    for (i in c(1:nrow(ID_meanexpr3))){
-      accum = sum(ID_meanexpr3$percent[1:i])
-      accumulative[i] = accum
-    }
-    remove_pos = (length(which(accumulative <= thres))+1)
-    remove_index = ID_meanexpr3$names[1:remove_pos]
-    networkData_filter = networkData[!(rownames(networkData)%in%remove_index),]
-    Results = list(remove_index=remove_index,networkData_filter = networkData_filter)
-    return(Results)
-  }
-  # step 0 - rm too many zeros
-  zero_cm_label = check_zero(networkData,
-                             thres_rmzero = thres_rmzero,
-                             count_rmzero = count_rmzero)
-  networkData_nozero = data_expr_all_with0[zero_cm_label=="ok",]
-  # step 1 - filter out top 40% counts
-  ## filter out top 40% counts # function established for future use
-  networkData_filter = remove_filter(networkData_nozero,cousin)$networkData_filter
-  # step 2 - normalization (0s out and normalization)
-  remove_index = which(rowSums(networkData_filter) == 0)#;length(remove_index14)
-  networkData_nm1 = networkData_filter[-remove_index,]#;dim(networkData_nm1)
-  networkData_nmList = DGEList(counts = networkData_nm1,group  = c(rep("ref",n1),rep("test",n2)))
-  networkData_nm2 = calcNormFactors(networkData_nmList)
-  networkData_normalized_normfactors = networkData_nm2$samples
-  networkData_normalized = data.frame(networkData_nm2$counts)
-  #dim(networkData_normalized)
-  # step 3 - log 2 trans
-  # log trans
-  #networkData_log2 = log2(networkData_normalized+2)
-  # step 4 - filter out bottom xx% variation
-  # select most var
-  networkData_normalized$variance = apply(networkData_normalized, 1, var)
-  networkData_50var = networkData_normalized[networkData_normalized$variance >= quantile(networkData_normalized$variance,c(perct)), ] #50% most variable genes
-  networkData_50var$variance <- NULL
-  #dim(networkData14_log2_50var)
-  # step 5 - pca correction
-  networkData_final = networkData_50var
-  #save files for out put
-  save(networkData_final,
-       networkData_normalized_normfactors,
-       networkData_normalized,
-       file = paste(deparse(substitute(networkData)),"prepare_with_corrections","_top",100*(1-perct),".RData",sep = ""))
-  return(list(Processed_final = networkData_final))
-}
 # Same rationales but FANCY way, remove confounding artifacts
 # (ref - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1700-9 )
-
 DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
                      thres_rmzero,count_rmzero,
                      Correct = T){
@@ -137,10 +77,8 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
     exprs_corrected_norm <- q_normalize(exprs_corrected)
     return(list(exprs_corrected_norm = t(data.frame(exprs_corrected_norm))))
   }
-  
-  # step 0 - rm too many zeros
-  zero_cm_label = check_zero(networkData,thres_rmzero = 5,count_rmzero = 9)
-  networkData_nozero = data_expr_all_with0[zero_cm_label=="ok",]
+  # 1/2/3 normalization then var select for non-correction option
+  # 
   # step 1 - filter out top 40% counts
   ## filter out top 40% counts # function established for future use
   networkData_filter = remove_filter(networkData,cousin)$networkData_filter
@@ -151,34 +89,41 @@ DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
   networkData_nm2 = calcNormFactors(networkData_nmList)
   networkData_normalized_normfactors = networkData_nm2$samples
   networkData_normalized = data.frame(networkData_nm2$counts)
-  #dim(networkData_normalized)
-  # step 3 - log 2 trans
-  # log trans
-  networkData_log2 = log2(networkData_normalized+2)
-  # step 4 - filter out bottom xx% variation
-  # select most var
-  # no crt
-  networkData_normalized$variance = apply(networkData_normalized, 1, var)
-  networkData_50var_nocrt = networkData_normalized[networkData_normalized$variance >= quantile(networkData_normalized$variance,c(perct)), ] #50% most variable genes
+  # step 3 - check zeros and var selection for non-correction option
+  zero_cm_label = check_zero(networkData_normalized,
+                             thres_rmzero = thres_rmzero,
+                             count_rmzero = count_rmzero)
+  networkData_normalized_nozero = networkData_normalized[zero_cm_label=="ok",]
+  #
+  networkData_normalized_nozero$variance = apply( networkData_normalized_nozero, 1, var)
+  networkData_50var_nocrt =  networkData_normalized_nozero[ networkData_normalized_nozero$variance >= quantile( networkData_normalized_nozero$variance,c(perct)),] #50% most variable genes
   networkData_50var_nocrt$variance <- NULL
+  # step 4- log 2 trans
+  # log trans
+  networkData_log2 = log2(networkData_normalized_nozero+2)
+  # step 4 - filter out bottom xx% variation
   # crt
   networkData_log2$variance = apply(networkData_log2,1,var)
   networkData_log2_50var = networkData_log2[networkData_log2$variance >= quantile(networkData_log2$variance,c(perct)),] 
   networkData_log2_50var$variance <- NULL
-
   # step 5 - pca correction 
   networkData_correction = Correct_pca(networkData_log2_50var,"leek")
   networkData_final = data.frame(networkData_correction$exprs_corrected_norm); 
   names(networkData_final) = names(networkData_log2_50var)
-  save(networkData_final,
-       networkData_log2_50var,
-       networkData_normalized_normfactors,
-       networkData_normalized,
-       file = paste(deparse(substitute(networkData)),"prepare with corrections","_top",100*(1-perct),".RData",sep = ""))
-  if (Correct == T) {return(list(Corrected_log2_PC = networkData_final))}
+  if (Correct == T) {
+    save(networkData_final,
+         networkData_log2_50var,
+         networkData_normalized_normfactors,
+         networkData_normalized,
+         file = paste(deparse(substitute(networkData)),"prepare_with_corrections","_top",100*(1-perct),".RData",sep = ""))
+    return(list(Corrected_log2_PC = networkData_final))}
   else if (Correct == F){
+    save(networkData_50var_nocrt,
+         networkData_normalized_normfactors,
+         networkData_normalized,
+         file = paste(deparse(substitute(networkData)),"prepare_no_corrections","_top",100*(1-perct),".RData",sep = ""))
     message('pc correction not applied')
-    return(list(networkData_final_no_crt = networkData_50var_nocrt))}
+    return(list(networkData_50var_no_crt = networkData_50var_nocrt))}
   else {message("please specify pc data correction option - Correct = T or F")}
 }
 
