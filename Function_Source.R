@@ -23,11 +23,11 @@ library(MeSH.Bta.eg.db)
 #===========================================================================================
 # Classical way, networkData(rawdata,genes in rows and samples in cols), 
 #                 n1-n2 (number of ref and treatmnent group)
-#                 perct (the percentage to REMOVE based on VARIANCE across two conditions)            
+#                 perct (the percentage to REMOVE based on VARIANCE across two conditions)
 # Same rationales but FANCY way, remove confounding artifacts
 # (ref - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1700-9 )
 DataPre_C = function(networkData, cousin = 0.4, n1, n2, perct,
-                     thres_rmzero,count_rmzero,
+                     thres_rmzero = 5,count_rmzero,
                      Correct = T){
   #function prepare
   check_zero = function(networkData,thres_rmzero,count_rmzero){
