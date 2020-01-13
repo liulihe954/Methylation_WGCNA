@@ -11,9 +11,12 @@ load("module_colorsNlabels_control.RData")
 
 load("Enrich_Ensentials.RData")
 # Container pre
+
 Total_list_out_entrez = Sig_list_out_entrez
 Sig_list_out_entrez = Total_list_out_entrez
 TestingSubsetNames = nonpres_modulenames_b
+Sig_list_out = Sig_list_out_ens
+load("Ensembl2Entrez_Convert.RData")
 # Run loops
 Kegg_Enrichment_pval005_1102 = Kegg_Enrich_Plot(sig_genes_all = Sig_list_out_entrez,
                                                 total_genes_all = Total_list_out_entrez,

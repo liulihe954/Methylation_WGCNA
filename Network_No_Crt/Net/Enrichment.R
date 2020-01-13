@@ -1,5 +1,7 @@
 # Founction preparation
+setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA')
 source("Function_Source.R")
+setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net')
 load("data_expr_all_with0prepare_no_corrections_top50.RData")
 load("permutedStats-actualModules.RData")
 load("modulePreservation_methionine.RData")
