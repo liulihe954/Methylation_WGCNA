@@ -102,6 +102,7 @@ for (i in seq_along(names(GO_results_b))){
   all_module[i] = unlist(strsplit(names(GO_results_b)[i]," "))[1]
 }
 
+
 all_data =c("Reactome_Enrich_all_pat_0113.RData",
             "Reactome_Enrich_lowest_path_0113.RData",
             "Reactome_Enrichment_all_react_0113.RData")
