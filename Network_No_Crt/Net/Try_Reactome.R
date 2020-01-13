@@ -52,7 +52,7 @@ NCBI2Reactome_all_react_bt =
 NCBI2Reactome_all_react_bt[] <-   lapply(NCBI2Reactome_all_react_bt, function(x) if(is.factor(x)) as.character(x) else x)
 NCBI2Reactome_lowest_path_bt[] <- lapply(NCBI2Reactome_lowest_path_bt, function(x) if(is.factor(x)) as.character(x) else x)
 NCBI2Reactome_all_path_bt[] <-   lapply(NCBI2Reactome_all_path_bt, function(x) if(is.factor(x)) as.character(x) else x)
-setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt")
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
 ### Container pre
 # Container pre
 Total_list_out_entrez = Sig_list_out_entrez
