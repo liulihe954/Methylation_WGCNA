@@ -520,8 +520,6 @@ MESH_Enrich = function(total_genes_all,
   Mesh_results_b = list()
   Mesh_results_b_raw = list()
   DB_List = list()
-  library(MeSH.db);library(MeSH.Bta.eg.db);library(tidyverse);library(gage);library(magrittr)
-  library(ggplot2);library(biomaRt);library(MeSH.Bta.eg.db)
   ### Three ways to get meshdb
   # 1 download from github: we are gonna use
   #githubURL <- "https://github.com/liulihe954/Repro_Estrous_0918/raw/master/MeshDB.RData"
@@ -551,9 +549,11 @@ MESH_Enrich = function(total_genes_all,
   #  dplyr::left_join(Match_List,by= c("MESHID" = "MESHID"))
   
   # 3. alternatively, if you have them in your environment
-  keyword_outer = "MeshDB"
-  DB = paste(keyword_outer,".RData",sep = "")
-  load(DB)
+   
+  # keyword_outer = "MeshDB"
+  # DB = paste(keyword_outer,".RData",sep = "")
+  # load(DB)
+  
   #Sig_list_out_entrez_test2
   #Total_list_out_entrez_test2
   # Get index
