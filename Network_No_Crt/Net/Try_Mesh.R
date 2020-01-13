@@ -17,7 +17,7 @@ TestingSubsetNames = nonpres_modulenames_b
 load("Ensembl2Entrez_Convert.RData")
 
 # MeSH db pre
-setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Mesh_db/")
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Mesh_db")
 keyword_outer = "MeshDB"
 DB = paste(keyword_outer,".RData",sep = "")
 load(DB)
