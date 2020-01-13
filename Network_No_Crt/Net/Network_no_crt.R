@@ -213,11 +213,6 @@ multiExpr = list(control=list(data = adjacency_control),
 multiColor = list(control= moduleColors_control)
 names(multiExpr) = setLabels
 
-test = goodSamplesGenes(datExpr_control)$goodGenes
-which(test==FALSE)
-datExpr_control[,2542]
-datExpr_treatment[,2542]
-
 # permutation
 mp = modulePreservation(multiExpr,
                         multiColor,
