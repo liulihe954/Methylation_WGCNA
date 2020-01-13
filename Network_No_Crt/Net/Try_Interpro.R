@@ -8,7 +8,7 @@ load("modulePreservation_methionine.RData")
 load("SoftThres_control.RData")
 load("modulePreservation_methionine.RData")
 load("module_colorsNlabels_control.RData")
-
+load("Enrich_Ensentials.RData")
 # Container pre
 Total_list_out_entrez = Sig_list_out_entrez
 Sig_list_out_entrez = Total_list_out_entrez
