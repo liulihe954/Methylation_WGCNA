@@ -15,8 +15,6 @@ Total_list_out_entrez = Sig_list_out_entrez
 Sig_list_out_entrez = Total_list_out_entrez
 TestingSubsetNames = nonpres_modulenames_b
 # Run loops
-load("Ensembl2Entrez_Convert.RData")
-# Run loops
 
 #### Read in database
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Reactome_db/")

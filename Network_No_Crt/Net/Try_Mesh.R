@@ -14,8 +14,6 @@ load("Enrich_Ensentials.RData")
 Total_list_out_entrez = Sig_list_out_entrez
 Sig_list_out_entrez = Total_list_out_entrez
 TestingSubsetNames = nonpres_modulenames_b
-# Run loops
-load("Ensembl2Entrez_Convert.RData")
 
 # MeSH db pre
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Mesh_db/")
