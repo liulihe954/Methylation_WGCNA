@@ -30,6 +30,7 @@ Enrich_Results_thres005_1102 = Go_Enrich_Plot(total_genes_all = Total_list_out_e
 ##################################################
 load("GO_Enrichment_0113.RData")
 # get loop index
+
 all_module = character()
 for (i in seq_along(names(GO_results_b))){
   all_module[i] = unlist(strsplit(names(GO_results_b)[i]," "))[1]
