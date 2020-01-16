@@ -18,10 +18,27 @@ load("Ensembl2Entrez_Convert.RData")
 
 # MeSH db pre
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Mesh_db")
-keyword_outer = "MeshDB"
+keyword_outer = "MeshDB2"
 DB = paste(keyword_outer,".RData",sep = "")
 load(DB)
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
+
+
+# test_all = unlist(Total_list_out_entrez[1])
+# test_sig = unlist(Sig_list_out_entrez[6]);attributes(test_sig) = NULL
+# ######
+# meshParams <- new("MeSHHyperGParams", geneIds = test_sig,
+#                   universeGeneIds = test_all,
+#                   annotation = "MeSH.Bta.eg.db", category = "D", database = "gene2pubmed",
+#                   pvalueCutoff = 0.05, pAdjust = "none")
+# meshR <- meshHyperGTest(meshParams)
+# out = data.frame(meshR@ORA$MESHID, meshR@ORA$MESHTERM,
+#                  meshR@ORA$Size, meshR@ORA$Count, signif(meshR@ORA$Pvalue,2))
+# colnames(out) = c("MeSH Term ID", "MeSH Term Name",
+#                   "NT.Genes", "DE Genes", "P-value")
+# print(unique(out), row.names = F)
+
+
 # Run loops
 #==============================================================================================
 #                                      11. Mesh enrichment                                   ##
@@ -34,12 +51,12 @@ MESH_Enrichment_1102 = MESH_Enrich(total_genes_all = Total_list_out_entrez,
                                    Sig_list_out = Sig_list_out,
                                    MeshCate = c("D","G"),
                                    dataset="MeSH.Bta.eg.db",
-                                   keyword = "MESH_Enrichment_0113")
+                                   keyword = "MESH_Enrichment_0115")
 
 ############################################################
 ### =======                Mesh                ========== ##
 ############################################################
-load("MESH_Enrichment_0113.RData")
+load("MESH_Enrichment_0115.RData")
 # get loop index
 all_module = character()
 for (i in seq_along(names(Mesh_results_b))){
@@ -58,4 +75,4 @@ for (i in seq_along(all_module)){
 }
 require(openxlsx)
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/enrich_results")
-write.xlsx(all_mesh_results,file = "Mesh_Results_all_0113.xlsx")
+write.xlsx(all_mesh_results,file = "Mesh_Results_all_0115.xlsx")

@@ -96,7 +96,7 @@ Reactome_Enrich_all_path_1102 = Reactome_Enrich(total_genes_all=Total_list_out_e
 ### =======                   Reactome         ========== ##
 ############################################################
 # get loop index
-load('Reactome_Enrich_all_path_0113.RData')
+load('Reactome_Enrich_lowest_path_0113.RData')
 all_module = character()
 for (i in seq_along(names(Reactome_results_b))){
   all_module[i] = unlist(strsplit(names(Reactome_results_b)[i]," "))[1]
@@ -108,8 +108,6 @@ all_data =c("Reactome_Enrich_all_path_0113.RData",
 all_keywords=c("Reactome_all_path_Results_all_0113.xlsx",
                "Reactome_lowest_path_Results_all_0113.xlsx",
                "Reactome_all_react_Results_all_0113.xlsx")
-
-
 
 for (m in c(1:3)){
   dataset = all_data[m]
@@ -129,6 +127,5 @@ for (m in c(1:3)){
   require(openxlsx)
   setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/enrich_results")
   write.xlsx(all_r_a_path_results,file=keyword)
-  #setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA")
+  setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net')
 }
-
