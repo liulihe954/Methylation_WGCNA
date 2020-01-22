@@ -38,7 +38,7 @@ for (i in seq_along(Msig_urls)){
 Universe_Descrip = data.frame(cbind(Msig_name_index,All_Descrip))
 colnames(Universe_Descrip) = c('gs_name','gd_description')
 
-m_df_all = dplyr::left_join(m_df[1:20,],
+m_df_all = dplyr::left_join(m_df,
                             Universe_Descrip,
                             by = c("gs_name" = "gs_name"))
 
