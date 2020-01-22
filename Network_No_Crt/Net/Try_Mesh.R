@@ -24,20 +24,20 @@ load(DB)
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
 
 
-# test_all = unlist(Total_list_out_entrez[1])
-# test_sig = unlist(Sig_list_out_entrez[6]);attributes(test_sig) = NULL
-# ######
-# meshParams <- new("MeSHHyperGParams", geneIds = test_sig,
-#                   universeGeneIds = test_all,
-#                   annotation = "MeSH.Bta.eg.db", category = "D", database = "gene2pubmed",
-#                   pvalueCutoff = 0.05, pAdjust = "none")
-# meshR <- meshHyperGTest(meshParams)
-# out = data.frame(meshR@ORA$MESHID, meshR@ORA$MESHTERM,
-#                  meshR@ORA$Size, meshR@ORA$Count, signif(meshR@ORA$Pvalue,2))
-# colnames(out) = c("MeSH Term ID", "MeSH Term Name",
-#                   "NT.Genes", "DE Genes", "P-value")
-# print(unique(out), row.names = F)
-
+test_all = unlist(Total_list_out_entrez[1])
+test_sig = unlist(Sig_list_out_entrez[6]);attributes(test_sig) = NULL
+######
+meshParams <- new("MeSHHyperGParams", geneIds = test_sig,
+                  universeGeneIds = test_all,
+                  annotation = "MeSH.Bta.eg.db", category = "G", database = "gene2pubmed",
+                  pvalueCutoff = 0.05, pAdjust = "none")
+meshR <- meshHyperGTest(meshParams)
+out = data.frame(meshR@ORA$MESHID, meshR@ORA$MESHTERM,
+                 meshR@ORA$Size, meshR@ORA$Count, signif(meshR@ORA$Pvalue,2))
+colnames(out) = c("MeSH Term ID", "MeSH Term Name",
+                  "NT.Genes", "DE Genes", "P-value")
+print(unique(out), row.names = F)
+all = summary(meshR)
 
 # Run loops
 #==============================================================================================
