@@ -33,6 +33,34 @@ test = Msig_Enrich(m_df_all = m_df_all,
                    Sigthres = 0.05,
                    Sig_list_out,
                    DB_List = DB_List,
-                   keyword = "Msig_Enrichment")
+                   keyword = "Msig_Enrichment_0124")
+
+############################################################
+### =======               Msig                 ========== ##
+############################################################
+load("Msig_Enrichment_0124.RData")
+
+# get loop index
+all_module = character()
+for (i in seq_along(names(Results_b))){
+  all_module[i] = unlist(strsplit(names(Results_b)[i]," "))[1]
+}
+
+#names(Interpro_results_b[[1]])
+# loop
+all_Msig_results = list()
+for (i in seq_along(all_module)){
+  tmp_name = all_module[i]
+  tmp_results = Parse_Results(Results_b[i], keyword= "-")
+  if (!(dim(tmp_results)[1] == 0)){
+    tmp_results = dplyr::select(tmp_results,-ExternalLoss_total,-InternalLoss_sig) %>% dplyr::arrange(pvalue_r) 
+  }
+  all_Msig_results[[i]] = tmp_results
+  names(all_Msig_results)[i] = all_module[i]
+}
+
+require(openxlsx)
+setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/enrich_results")
+write.xlsx(all_interpro_results,file = "Msig_Results_all_0124.xlsx")
 
 

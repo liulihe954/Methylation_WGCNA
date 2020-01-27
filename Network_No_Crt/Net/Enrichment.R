@@ -17,6 +17,7 @@ Zsummary=Z.PreservationStats$Zsummary.pres
 nonpres_index_b = (which(Zsummary < 2))
 nonpres_modulenames_b = rownames(Z.PreservationStats)[nonpres_index_b]
 nonpres_modulenames_b = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
+
 # convert ensembl to entrez(ncbi)
 TestingModAssign = moduleColors_control
 bg_gene = rownames(network_final)
