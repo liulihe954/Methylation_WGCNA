@@ -777,6 +777,96 @@ Reactome_Enrich = function(total_genes_all,
           length(TestingSubsetNames)," modules/subsets", 
           " at the significance level of ",Reacthres)
   message("Nice! - Reactome enrichment finished and data saved")}
+
+#########################################################################################################################
+Msig_Enrich = function(m_df_all = m_df_all,
+                       total_genes_all,
+                       sig_genes_all,
+                       TestingSubsetNames,
+                       Sigthres = 0.05,
+                       Sig_list_out,
+                       DB_List = DB_List,
+                       keyword = "Msig_Enrichment"){
+  # Container Pre
+  total_enrich = 0
+  raw_pvalue_all = numeric()
+  Results_b = list()
+  Results_b_raw = list()
+  #DB_List = list()
+  # looping index pre
+  #list_Bta = list_Bta[which(list_Bta$MESHCATEGORY %in% MeshCate),]
+  #Msig_name_index = na.omit(unique(m_df_all$gs_name))
+  Msig_name_index = na.omit(unique(m_df_all$gd_description))
+  Msig_id_index = na.omit(unique(m_df_all$gs_id))
+  genesMsig = unique(m_df_all$entrez_gene)
+  #
+  message("Total Number of module/subsets to check: ",length(TestingSubsetNames))
+  message("Total Number of Msig to check: ",length(Msig_id_index)," with total number of names: ",length(Msig_name_index))
+  for (i in c(1:(length(TestingSubsetNames)))){
+    message("working on dataset #",i," - ",TestingSubsetNames[i])
+    sig.genes = unlist(sig_genes_all[i]);attributes(sig.genes) = NULL
+    total.genes = unlist(total_genes_all[i]);attributes(total.genes) = NULL
+    # total genes in the non-preserved module
+    N = length(total.genes[total.genes %in% genesMsig])
+    S = length(sig.genes[sig.genes %in% genesMsig])
+    ExternalLoss_total = paste((length(total.genes) - N),round((length(total.genes) - N)/N,3),sep = "/")
+    ExternalLoss_sig = paste((length(sig.genes) - S),round((length(sig.genes) - S)/S,3),sep = "/")
+    out = data.frame(MsigID=character(),
+                     MsigTerm=character(),
+                     totalG=numeric(),
+                     sigG=numeric(),
+                     Pvalue=numeric(),
+                     ExternalLoss_total = character(),
+                     ExternalLoss_sig = character(),
+                     findG =  character())
+    message("Module size of ",TestingSubsetNames[i],": ", length(sig.genes))
+    for(j in c(1:length(Msig_id_index))){
+      if (j%%100 == 0) {message("tryingd on MsigID ",j," - ",Msig_id_index[j]," - ",Msig_name_index[j])}
+      gENEs = DB_List[[j]]
+      m = length(total.genes[total.genes %in% gENEs]) # genes from target  and in our dataset
+      findG = sig.genes[sig.genes %in% gENEs]
+      s = length(findG)
+      orig_list = data.frame(Sig_list_out[[i]]) %>% dplyr::filter(ENTREZID_final %in% findG)
+      PastefindG = paste(orig_list[,1], collapse="/")
+      M = matrix(c(s,S-s,m-s,N-m-S+s),byrow = 2, nrow = 2)
+      Pval = round(fisher.test(M, alternative ="g")$p.value,100)
+      #length(gENEs);Pval
+      tmp = data.frame(MsigID= Msig_id_index[j], 
+                       MsigTerm = Msig_name_index[j], 
+                       totalG = m, 
+                       sigG = s, 
+                       Pvalue = Pval, 
+                       ExternalLoss_total = ExternalLoss_total,
+                       ExternalLoss_sig = ExternalLoss_sig,
+                       findG = PastefindG)
+      out = rbind(out,tmp)}
+    # put all palues in a box
+    raw_pvalue_all = append(raw_pvalue_all,out$Pvalue,length(raw_pvalue_all))
+    # raw complilation starts
+    final_raw = out[order(out$Pvalue),];colnames(final_raw) = c("MsigID","MsigTerm", "Total_Genes", "Significant_Genes", "pvalue_r","ExternalLoss_total","InternalLoss_sig","findG")
+    final_raw = final_raw %>% dplyr::mutate(hitsPerc = Significant_Genes*100 / Total_Genes)
+    Results_b_raw[[i]] = final_raw; names(Results_b_raw)[i] = paste(TestingSubsetNames[i],"with",dim(final_raw)[1],"enriched Msig raw")
+    # raw complilation ends
+    # selection starts - select those has 4 more gene in common and pvalue smaller than 0.05
+    ot = subset(out,totalG > 4 & Pvalue <= Sigthres)
+    final = ot[order(ot$Pvalue),];colnames(final) = c("MsigID","MsigTerm", "Total_Genes", "Significant_Genes", "pvalue_r","ExternalLoss_total","InternalLoss_sig","findG")
+    final = final %>% mutate(hitsPerc = (Significant_Genes*100)/Total_Genes)
+    Results_b[[i]] = final;names(Results_b)[i] = paste(TestingSubsetNames[i],"with",dim(final)[1],"enriched Msig")
+    # selection ends
+    message("Significant Enrichment Hits:",nrow(final))
+    total_enrich = total_enrich + nrow(final)
+  }
+  raw_pvalue_index = seq(0.05,1,by=0.05)
+  raw_pvalue_sum = numeric()
+  for( z in seq_along(raw_pvalue_index)){raw_pvalue_sum[z] = length(which(raw_pvalue_all <= raw_pvalue_index[z]))}
+  raw_pvalue_distribution = data.frame(index = raw_pvalue_index,counts_Mesh = raw_pvalue_sum)
+  #raw_pvalue_distribution
+  save(Results_b, Results_b_raw, raw_pvalue_distribution, file = paste(trimws(keyword),".RData",sep = ""))
+  message(total_enrich," significant MsigIDs found within ",
+          length(TestingSubsetNames)," modules/subsets", 
+          " at the significance level of ",Sigthres)
+  message("Nice! - Msig enrichment finished and data saved")}
+
 #########################################################################################################################
 Kegg_Enrich_Plot = function(sig_genes_all,
                             total_genes_all,# all genes in your dataset( vector - format - vector - ensembl iD)

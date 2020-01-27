@@ -10,6 +10,7 @@ m_df = msigdbr(species = "Bos taurus")
 # obtain name index and paste to all urls
 Msig_name_index = unique(m_df$gs_name)
 Msig_urls = paste(url_template,Msig_name_index,sep = "")
+
 # prepare R function to retrive description
 Get_Descrip = function(URL,
                        selector = "td",
@@ -27,8 +28,8 @@ Get_Descrip = function(URL,
   return(final)
 }
 
-setwd(Msig_db_destination)
-load('Msigdb_bta.RData')
+# setwd(Msig_db_destination)
+# load('Msigdb_bta.RData')
 # # loop to retrive
 # #Msig_urls_t = Msig_urls[1:20]
 # All_Descrip = c()
@@ -61,8 +62,13 @@ for ( p in seq_along(MsigID)){
 
 
 setwd(Msig_db_destination)
-save(m_df_all,
-     DB_List,
-     file = "Msigdb_bta.RData")
+# save(m_df_all,
+#      DB_List,
+#      file = "Msigdb_bta.RData")
+load('Msigdb_bta.RData')
 
-# load('Msigdb_bta.RData')
+
+#pre
+Msig_name_index = unique(m_df_all$gs_name)
+Msig_id_index = unique(m_df_all$gs_id)
+
