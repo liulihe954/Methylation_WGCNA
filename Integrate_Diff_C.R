@@ -9,6 +9,8 @@ chr_index = paste(rep('chr',30),c(seq(1,29),'X'),sep = "")
 Diff_C_all = getData(methCov08Stat) %>% 
   mutate_at(vars(chr),as.character) %>% 
   dplyr::filter(chr %in% chr_index)
+
+
 # dim(Diff_C_all)
 
 # using biomart
@@ -140,7 +142,7 @@ Meth_all = MythEval(gene_pos_info_bta,
                     ext = 'all', # all means left and right; 'prmt' FOR promoter ONLY
                     nchr = 30)
 
-as_tibble(Meth_all) %>% arrange(desc(meth)) %>% print(n = 10000)
+Meth_all = as_tibble(Meth_all) %>% arrange(desc(meth)) #%>% print(n = 100)
 
 
 
@@ -154,14 +156,17 @@ Meth_prmt = MythEval(gene_pos_info_bta,
                      ranchor = 5000,
                      ext = 'prmt', # all means left and right; 'prmt' FOR promoter ONLY
                      nchr = 30)
-as_tibble(Meth_prmt) %>% arrange(desc(meth)) %>% print(n = 100)
+Meth_prmt = as_tibble(Meth_prmt) %>% arrange(desc(meth)) #%>% print(n = 100)
+
 
 
 getwd()
 save(Meth_all,Meth_prmt,
      file = "MethEval_all.RData" )
+#
+load('MethEval_all.RData')
 
-
+head(Meth_prmt)
 
 # gene_bta_diff_c_out = merge(gene_bta_diff_c_out,
 #                                 out_compile,all=T,

@@ -61,6 +61,6 @@ for (i in seq_along(all_module)){
 
 require(openxlsx)
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/enrich_results")
-write.xlsx(all_interpro_results,file = "Msig_Results_all_0124.xlsx")
+write.xlsx(all_Msig_results,file = "Msig_Results_all_0124.xlsx")
 
 
