@@ -37,11 +37,13 @@ setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
 networkData_final  =  DataPre_C(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10,
                                 perct = 0.5,thres_rmzero = 5,count_rmzero = 9,Correct='N')
 network_final = data.frame(networkData_final[[1]])
-
 #dim(datExpr_treatment)
 datExpr_control = t(network_final[,which(substr(names(network_final),2,5) %in% control_index)])
 datExpr_treatment = t(network_final[,which(substr(names(network_final),2,5) %in% treatment_index)])
-
+save(datExpr_control,
+     datExpr_treatment,
+     network_final,file = "network_final.RData")
+load('network_final.RData')
 # we have data pre ready!!!
 # load("data_expr_allprepare_with_corrections_top50.RData")
 options(stringsAsFactors = FALSE)

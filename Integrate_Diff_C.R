@@ -12,9 +12,12 @@ Diff_C_all = getData(methCov08Stat) %>%
 
 
 # dim(Diff_C_all)
-
+#find.package('biomaRt')
 # using biomart
+#BiocManager::install("biomaRt")
+#install.packages('biomaRt_2.42.0.tgz',repos = NULL)
 library(biomaRt)
+#sessionInfo()
 # get postiion info
 genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
 gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_position", "end_position", "chromosome_name"), mart = genome)
@@ -24,6 +27,7 @@ gene_pos_info_bta$chromosome_name = paste('chr',gene_pos_info_bta$chromosome_nam
 # output pre
 gene_bta_diff_c_out = dplyr::select(gene_pos_info_bta,ensembl_gene_id,chromosome_name)
 
+
 # 
 thres = 0.05
 sig_type = 'qvalue'
@@ -31,7 +35,6 @@ lanchor = 5000
 ranchor = 5000
 ext = 'all'
 # ext = 'prmt'
-
 
 MythEval = function(gene_pos_info_bta,
                     Diff_C_all,
@@ -175,7 +178,10 @@ head(Meth_prmt)
 #                                 suffixes = c("",""))
 
 
-
+######=========================##########
+##       Retrive CpG info from NCBI    ##
+######========================##########
+head(gene_pos_info_bta)
 
 
 
