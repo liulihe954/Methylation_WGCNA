@@ -66,9 +66,3 @@ setwd(Msig_db_destination)
 #      DB_List,
 #      file = "Msigdb_bta.RData")
 load('Msigdb_bta.RData')
-
-
-#pre
-Msig_name_index = unique(m_df_all$gs_name)
-Msig_id_index = unique(m_df_all$gs_id)
-

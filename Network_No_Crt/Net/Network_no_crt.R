@@ -178,6 +178,7 @@ save(MEs_control, moduleLabels_control,
      moduleColors_control, geneTree_control, file = "module_colorsNlabels_control.RData")
 load("module_colorsNlabels_control.RData")
 print("Step5 - mergeing finished")
+
 #=================================================================================================
 #                              5. plotting heatmap                                            ###
 #=================================================================================================
