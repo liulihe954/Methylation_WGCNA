@@ -61,14 +61,45 @@ dev.off()
 ######=========================##########
 ##        Hyper G test                ##
 ######========================##########
-DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx') 
+library(readxl)
+library(tidyverse)
+DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
 DiffC2Gene = DiffC2Gene_raw %>% 
-  dplyr::filter(Gene != '-') #& 
-                  # `Meth Change %` >= 0.2*max(abs(`Meth Change %`)) &
-                  # `q-value` <= 0.1 &
-                  # Region %in% c('1st_EXON','PROMOTER','TSS')) 
-                  
-                
+  dplyr::filter(Gene != '-') %>% 
+  group_by(Gene) %>% 
+  count(Region)
+
+selected_gene = c()
+gene_index = unique(DiffC2Gene$Gene)
+for (i in seq_along(gene_index)){
+  anchor = gene_index[i]
+  tmp %>% dplyr::filter(Gene == anchor)
+}
+
+names(DiffC2Gene)
+
+head(DiffC2Gene,500)
+table(DiffC2Gene_raw$Region)
+
+names(DiffC2Gene)
+
+mtcars %>% group_by(cyl) %>% tally()
+mtcars %>% group_by(gear) %>% count(carb)
+
+
+Con1 <- "Region %in% c('1st_EXON','INTRON','GENE_BODY')"
+Con2 <- "Region %in% c('PROMOTER','UPSTREAM','TSS')"
+DiffC2Gene1 = DiffC2Gene_raw %>% dplyr::filter(Region %in% c('1st_EXON','INTRON','GENE_BODY'))
+DiffC2Gene2 = DiffC2Gene_raw %>% dplyr::filter(Region %in% c('PROMOTER','UPSTREAM','TSS'))
+
+
+
+
+
+# DiffC2Gene = DiffC2Gene_raw %>% dplyr::filter(Gene != '-')
+# DiffC2Gene_p1 = dplyr::filter(`Meth Change %` >= 0.2*max(abs(`Meth Change %`))｜`q-value` <= 0.1)
+# DiffC2Gene_p2 = dplyr::filter(`Meth Change %` >= 0.2*max(abs(`Meth Change %`))｜`q-value` <= 0.1)
+# Region %in% c('1st_EXON','PROMOTER','TSS'))
 length(unique(DiffC2Gene$Gene))
 table(DiffC2Gene_raw$Region)
 head(DiffC2Gene)
