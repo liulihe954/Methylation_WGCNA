@@ -24,8 +24,23 @@ gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_posi
 gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>%  arrange(ensembl_gene_id)
 gene_pos_info_bta$chromosome_name = paste('chr',gene_pos_info_bta$chromosome_name,sep = "")
 
+#listAttributes(genome)
+seq = getSequence(id = "ENSBTAG000000000012", 
+                  type = "ensembl_gene_id", 
+                  seqType = "gene_exon",
+                  mart = genome)
+show(seq)
+test = unlist(seq[1]);attributes(test) = NULL
+nchar(test)
+
+testlength(test)
+
+
 # output pre
 gene_bta_diff_c_out = dplyr::select(gene_pos_info_bta,ensembl_gene_id,chromosome_name)
+
+
+
 
 
 # 
