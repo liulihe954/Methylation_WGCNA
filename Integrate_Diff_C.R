@@ -10,38 +10,8 @@ Diff_C_all = getData(methCov08Stat) %>%
   mutate_at(vars(chr),as.character) %>% 
   dplyr::filter(chr %in% chr_index)
 
-
-# dim(Diff_C_all)
-#find.package('biomaRt')
-# using biomart
-#BiocManager::install("biomaRt")
-#install.packages('biomaRt_2.42.0.tgz',repos = NULL)
-library(biomaRt)
-#sessionInfo()
-# get postiion info
-genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
-gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_position", "end_position", "chromosome_name"), mart = genome)
-gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>%  arrange(ensembl_gene_id)
-gene_pos_info_bta$chromosome_name = paste('chr',gene_pos_info_bta$chromosome_name,sep = "")
-
-#listAttributes(genome)
-seq = getSequence(id = "ENSBTAG000000000012", 
-                  type = "ensembl_gene_id", 
-                  seqType = "gene_exon",
-                  mart = genome)
-show(seq)
-test = unlist(seq[1]);attributes(test) = NULL
-nchar(test)
-
-testlength(test)
-
-
 # output pre
 gene_bta_diff_c_out = dplyr::select(gene_pos_info_bta,ensembl_gene_id,chromosome_name)
-
-
-
-
 
 # 
 thres = 0.05
@@ -141,13 +111,14 @@ MythEval = function(gene_pos_info_bta,
     tmp_out = tmp %>% 
       dplyr::mutate(meth_total = total_c_count) %>% 
       dplyr::mutate(meth_sig = sig_c_count) %>% 
-      dplyr::mutate(meth = sig_c_count/total_c_count) %>% 
-      dplyr::select(ensembl_gene_id,meth)
+      dplyr::mutate(meth = sig_c_count/total_c_count) 
+    # %>% dplyr::select(ensembl_gene_id,meth)
     #proc.time() - ptm
     out_compile = rbind(out_compile,tmp_out)
   }
   return(out_compile) # list(MythStatus = 
 }
+
 
 Meth_all = MythEval(gene_pos_info_bta,
                     Diff_C_all,
@@ -162,8 +133,6 @@ Meth_all = MythEval(gene_pos_info_bta,
 
 Meth_all = as_tibble(Meth_all) %>% arrange(desc(meth)) #%>% print(n = 100)
 
-
-
 Meth_prmt = MythEval(gene_pos_info_bta,
                      Diff_C_all,
                      qthres = 0.1,
@@ -177,27 +146,14 @@ Meth_prmt = MythEval(gene_pos_info_bta,
 Meth_prmt = as_tibble(Meth_prmt) %>% arrange(desc(meth)) #%>% print(n = 100)
 
 
-
 getwd()
 save(Meth_all,Meth_prmt,
-     file = "MethEval_all.RData" )
+     file = "MethEval_all.RData")
+
 #
 load('MethEval_all.RData')
 
-head(Meth_prmt)
+sum(Meth_all$meth_sig)
 
-# gene_bta_diff_c_out = merge(gene_bta_diff_c_out,
-#                                 out_compile,all=T,
-#                                 by.x = "ensembl_gene_id", 
-#                                 by.y = "ensembl_gene_id",
-#                                 suffixes = c("",""))
-
-
-######=========================##########
-##       Retrive CpG info from NCBI    ##
-######========================##########
-head(gene_pos_info_bta)
-
-
-
-
+names(Meth_all)
+sum()
