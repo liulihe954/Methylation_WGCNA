@@ -5,6 +5,7 @@
 # Founction preparation
 setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA')
 source("Function_Source.R")
+setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net')
 #setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net')
 load("data_expr_all_with0prepare_no_corrections_top50.RData")
 load("permutedStats-actualModules.RData")
@@ -15,30 +16,30 @@ load("module_colorsNlabels_control.RData")
 load("Enrich_Ensentials.RData")
 load("Ensembl2Entrez_Convert.RData")
 load('network_final.RData')
-load('MethEval_all.RData')
+# load('MethEval_all.RData')
 
 # Gather Info: KME and Meth
-datKME_tmp = signedKME(datExpr_control, MEs_control)
-datKME = datKME_tmp %>% 
-  dplyr::mutate(ensembl_gene_id = rownames(datKME_tmp)) %>% 
-  dplyr::mutate(MdouleAssign = moduleColors_control) %>% 
-  dplyr::left_join(Meth_prmt, by= c("ensembl_gene_id" = "ensembl_gene_id"))
+# datKME_tmp = signedKME(datExpr_control, MEs_control)
+# datKME = datKME_tmp %>% 
+#   dplyr::mutate(ensembl_gene_id = rownames(datKME_tmp)) %>% 
+#   dplyr::mutate(MdouleAssign = moduleColors_control) %>% 
+#   dplyr::left_join(Meth_prmt, by= c("ensembl_gene_id" = "ensembl_gene_id"))
 #%>% dplyr::filter(meth != 1)
-head(datKME)
-summary(datKME$meth)
-table(datKME$ensembl_gene_id%in% Meth_prmt$ensembl_gene_id)
+# head(datKME)
+# summary(datKME$meth)
+# table(datKME$ensembl_gene_id%in% Meth_prmt$ensembl_gene_id)
 
 ######=========================##########
 ##            Index Pre                ##
 ######=========================##########
-ref=1; test = 2
-Z.PreservationStats=mp$preservation$Z[[ref]][[test]]
-Zsummary=Z.PreservationStats$Zsummary.pres
-#
-nonpres_index_b = (which(Zsummary < 2))
-nonpres_modulenames_b = rownames(Z.PreservationStats)[nonpres_index_b]
-Mod_Index_NonPre  = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
-Mod_Index_Pre = rownames(Z.PreservationStats)[-nonpres_index_b]
+# ref=1; test = 2
+# Z.PreservationStats=mp$preservation$Z[[ref]][[test]]
+# Zsummary=Z.PreservationStats$Zsummary.pres
+# #
+# nonpres_index_b = (which(Zsummary < 2))
+# nonpres_modulenames_b = rownames(Z.PreservationStats)[nonpres_index_b]
+# Mod_Index_NonPre  = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
+# Mod_Index_Pre = rownames(Z.PreservationStats)[-nonpres_index_b]
 
 ######=========================##########
 ##        diff C prop vs M.M           ##
@@ -107,10 +108,10 @@ library(tidyverse)
 
 # genome pre
 genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
-gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_position", "end_position", "chromosome_name"), mart = genome)
-gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>% 
-  arrange(ensembl_gene_id) %>% 
-  dplyr::mutate_at(vars(chromosome_name),add)
+# gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_position", "end_position", "chromosome_name"), mart = genome)
+# gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>% 
+#   arrange(ensembl_gene_id) %>% 
+#   dplyr::mutate_at(vars(chromosome_name),add)
 
 # function pre
 library(biomaRt)
