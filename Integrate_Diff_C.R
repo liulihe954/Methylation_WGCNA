@@ -152,8 +152,3 @@ save(Meth_all,Meth_prmt,
 
 #
 load('MethEval_all.RData')
-
-sum(Meth_all$meth_sig)
-
-names(Meth_all)
-sum()

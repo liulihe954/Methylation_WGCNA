@@ -65,48 +65,34 @@ setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 library(readxl)
 library(tidyverse)
 DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
-
+# data pre
 DiffC2Gene = DiffC2Gene_raw %>% 
   dplyr::filter(Gene != '-') %>% 
   group_by(Gene) %>% dplyr::count(Region)
-
-DiffC2Gene.extend = DiffC2Gene_raw %>% 
-  dplyr::filter(Gene != '-')
-
-selected_gene = c()
+# loop
 gene_index = unique(DiffC2Gene$Gene)
+Region1 = c('1st_EXON','GENE_BODY','INTRON')
+Region2 = c('PROMOTER','TSS','UPSTREAM')
+Gene_Sig_status1 = tibble()
+Gene_Sig_status2 = tibble()
 for (i in seq_along(gene_index)){
   anchor = gene_index[i]
-  tmp %>% dplyr::filter(Gene == anchor)
+  if (i%%100 == 0) message('Wokring On ',anchor)
+  tmp1 = DiffC2Gene %>% dplyr::filter(Gene == anchor) %>%
+    dplyr::filter(Region %in% Region1) %>% 
+    mutate(Count = sum(n)) %>% 
+    mutate(SigG = ifelse(Count > 30, "Sig", "Not"))
+  tmp2 = DiffC2Gene %>% dplyr::filter(Gene == anchor) %>%
+    dplyr::filter(Region %in% Region2) %>% 
+    mutate(Count = sum(n)) %>% 
+    mutate(SigG = ifelse(Count > 5, "Sig", "Not"))
+  Gene_Sig_status1 = bind_rows(Gene_Sig_status1,tmp1)
+  Gene_Sig_status2 = bind_rows(Gene_Sig_status2,tmp2)
 }
+save(Gene_Sig_status1,Gene_Sig_status2,file = 'Gene_Sig_status.RData')
 
-names(DiffC2Gene)
-
-head(DiffC2Gene,500)
-table(DiffC2Gene_raw$Region)
-
-names(DiffC2Gene)
-
-mtcars %>% group_by(cyl) %>% tally()
-mtcars %>% group_by(gear) %>% count(carb)
-
-
-Con1 <- "Region %in% c('1st_EXON','INTRON','GENE_BODY')"
-Con2 <- "Region %in% c('PROMOTER','UPSTREAM','TSS')"
-DiffC2Gene1 = DiffC2Gene_raw %>% dplyr::filter(Region %in% c('1st_EXON','INTRON','GENE_BODY'))
-DiffC2Gene2 = DiffC2Gene_raw %>% dplyr::filter(Region %in% c('PROMOTER','UPSTREAM','TSS'))
-
-
-
-
-
-# DiffC2Gene = DiffC2Gene_raw %>% dplyr::filter(Gene != '-')
-# DiffC2Gene_p1 = dplyr::filter(`Meth Change %` >= 0.2*max(abs(`Meth Change %`))｜`q-value` <= 0.1)
-# DiffC2Gene_p2 = dplyr::filter(`Meth Change %` >= 0.2*max(abs(`Meth Change %`))｜`q-value` <= 0.1)
-# Region %in% c('1st_EXON','PROMOTER','TSS'))
-length(unique(DiffC2Gene$Gene))
-table(DiffC2Gene_raw$Region)
-head(DiffC2Gene)
+table(Gene_Sig_status1$SigG)
+table(Gene_Sig_status2$SigG)
 
 
 ######=========================##########

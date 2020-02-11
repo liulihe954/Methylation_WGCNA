@@ -149,7 +149,8 @@ AGCTcount = function(ENS,
 
 #
 Gene_all = unique(rownames(networkData_normalized))
-Gene_net = unique(rownames(networkData_50var_nocrt)) 
+Gene_net = unique(rownames(networkData_50var_nocrt))
+
 #
 #Gene_DiffC_index = unique(DiffC2Gene.extend$Gene)
 Genes_C_count_all = data.frame(Gene = c(),
@@ -161,3 +162,9 @@ for (i in seq_along(Gene_all)){
 }
 
 save(Genes_C_count_all,file = 'Genes_C_count_all.RData')
+
+load('Genes_C_count_all.RData')
+
+dim(Genes_C_count_all)
+
+
