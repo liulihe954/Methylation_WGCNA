@@ -107,6 +107,7 @@ library(tidyverse)
 #   dplyr::filter(Gene != '-')
 
 # genome pre
+library(biomaRt)
 genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
 # gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_position", "end_position", "chromosome_name"), mart = genome)
 # gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>% 
@@ -114,7 +115,6 @@ genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ens
 #   dplyr::mutate_at(vars(chromosome_name),add)
 
 # function pre
-library(biomaRt)
 AGCTcount = function(ENS,
                      genome = genome,
                      type = "ensembl_gene_id", 
@@ -141,30 +141,68 @@ AGCTcount = function(ENS,
   seq_all = paste(seq_p1,
                   substring(seq_p2,nchar(seq_p2)-downstream + 1,nchar(seq_p2)),
                   sep = '')
-  nchar(seq_all)
+  # nchar(seq_all)
   Find_loc = data.frame(str_locate_all(seq_all,find))
   total_c = nrow(Find_loc)
   return(total_c)
 }
 
-#
 Gene_all = unique(rownames(networkData_normalized))
 Gene_net = unique(rownames(networkData_50var_nocrt))
 
-#
-#Gene_DiffC_index = unique(DiffC2Gene.extend$Gene)
+#Gene_all = Gene_all_total[1:5000]
 Genes_C_count_all = data.frame(Gene = c(),
                                total = c())
 for (i in seq_along(Gene_all)){
-  Genes_C_count_all[i,1] = Gene_all[i]
-  Genes_C_count_all[i,2] = AGCTcount(Gene_all[i],genome = genome)
   message('Working on ',Gene_all[i])
+  Genes_C_count_all[i,1] = Gene_all[i]
+  Genes_C_count_all[i,2] = try(AGCTcount(Gene_all[i],genome = genome),TRUE)
+  if(isTRUE(class(Genes_C_count_all[i,2])=="try-error")) {
+    Genes_C_count_all[i,2] = 'error'
+    message('Find error with ', Gene_all[i])
+    next 
+  } else { 
+      Genes_C_count_all[i,2] = AGCTcount(Gene_all[i],genome = genome)
+      }
 }
 
 save(Genes_C_count_all,file = 'Genes_C_count_all.RData')
 
-load('Genes_C_count_all.RData')
-
-dim(Genes_C_count_all)
-
-
+# for (i in c(1:5)) {
+#   
+#   skip_to_next <- FALSE
+#   test = AGCTcount(Gene_all[i],genome = genome)
+#   # Note that print(b) fails since b doesn't exist
+#   tryCatch(print(), error = function(e) { skip_to_next <<- TRUE})
+# 
+#   if(skip_to_next) { next }
+# }
+# 
+# 
+# which(Gene_all_total == 'ENSBTAG00000001455')
+# 
+# AGCTcount(Gene_all[859],genome = genome)
+# 
+# save(Genes_C_count_all,file = 'Genes_C_count_all_5k.RData')
+# 
+# head(gene_pos_info_bta)
+# #load('Genes_C_count_all_5k.RData')
+# #Genes_C_count_5k = Genes_C_count_all
+# library(httr)
+# library(jsonlite)
+# library(xml2)
+# 
+# species <- "cow"
+# chrom <- "17"
+# start <- 67669019 - 5000     
+# end <- 67758720 + 5000
+# region <- paste0(chrom, ":", start, "..", end)
+# server <- "http://rest.ensembl.org/sequence/region"
+# r <- GET(paste(server, species, region, sep = "/"), content_type("text/plain"))
+# #print(content(r))
+# test = (content(r))
+# 
+# Find_loc = data.frame(str_locate_all(test,'CG'))
+# Find_loc2 = data.frame(str_locate_all(seq_all,'CG'))
+# 
+# 
