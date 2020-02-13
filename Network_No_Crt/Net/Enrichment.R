@@ -34,3 +34,19 @@ save(Sig_list_out_entrez,
      nonpres_modulenames_b,
      Sig_list_out_ens,
      file = "Enrich_Ensentials.RData")
+
+
+# local plotting
+#setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/enrich_results')
+GO_results_antiquewhite2 = read_xlsx('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/enrich_results/GO_Results_all_0113.xlsx')
+GO_results_brown2 = read_xlsx('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/enrich_results/GO_Results_all_0113.xlsx',2)
+#setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net')
+test = ReduceDim_GO_Plot(GO_results_brown2,
+                         GOthres = 0.01,
+                         label_sizeCC = 0.4,
+                         label_sizeBP = 0.4,
+                         label_sizeMF = 0.4,
+                         Database = "org.Bt.eg.db",
+                         measure="Jiang",combine=NULL,
+                         Dataset_Name = 'GO')
+                 

@@ -60,42 +60,6 @@ load('network_final.RData')
 # dev.off()
 
 ######=========================##########
-##        Hyper G test                ##
-######========================##########
-# setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
-# library(readxl)
-# library(tidyverse)
-# DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
-# 
-# DiffC2Gene = DiffC2Gene_raw %>% 
-#   dplyr::filter(Gene != '-') %>% 
-#   group_by(Gene) %>% dplyr::count(Region)
-# 
-# DiffC2Gene.extend = DiffC2Gene_raw %>% 
-#   dplyr::filter(Gene != '-')
-# 
-# selected_gene = c()
-# gene_index = unique(DiffC2Gene$Gene)
-# for (i in seq_along(gene_index)){
-#   anchor = gene_index[i]
-#   tmp %>% dplyr::filter(Gene == anchor)
-# }
-# 
-# Con1 <- "Region %in% c('1st_EXON','INTRON','GENE_BODY')"
-# Con2 <- "Region %in% c('PROMOTER','UPSTREAM','TSS')"
-# DiffC2Gene1 = DiffC2Gene_raw %>% dplyr::filter(Region %in% c('1st_EXON','INTRON','GENE_BODY'))
-# DiffC2Gene2 = DiffC2Gene_raw %>% dplyr::filter(Region %in% c('PROMOTER','UPSTREAM','TSS'))
-# 
-
-
-
-
-# DiffC2Gene = DiffC2Gene_raw %>% dplyr::filter(Gene != '-')
-# DiffC2Gene_p1 = dplyr::filter(`Meth Change %` >= 0.2*max(abs(`Meth Change %`))｜`q-value` <= 0.1)
-# DiffC2Gene_p2 = dplyr::filter(`Meth Change %` >= 0.2*max(abs(`Meth Change %`))｜`q-value` <= 0.1)
-# Region %in% c('1st_EXON','PROMOTER','TSS'))
-
-######=========================##########
 ##        Myth_extent porp            ##
 ######========================##########
 # gene pre
@@ -126,47 +90,75 @@ AGCTcount = function(ENS,
   library(biomaRt)
   add = function(x, sep = ''){paste("chr",x,sep = sep)}
   # generates 5' to 3' sequences of the requested type on the correct strand
-  seq1 = getSequence(id = ENS, 
+  seq1 = try(getSequence(id = ENS, 
                      type = type, 
                      seqType = seqType,
                      upstream = upstream,
-                     mart = genome)
-  seq_p1 = c(seq1[1]);attributes(seq_p1) = NULL
-  seq2 = getSequence(id = ENS, 
-                     type = type, 
-                     seqType = seqType,
-                     downstream = downstream,
-                     mart = genome)
-  seq_p2 = unlist(seq2[1]);attributes(seq_p2) = NULL
-  seq_all = paste(seq_p1,
-                  substring(seq_p2,nchar(seq_p2)-downstream + 1,nchar(seq_p2)),
-                  sep = '')
-  # nchar(seq_all)
-  Find_loc = data.frame(str_locate_all(seq_all,find))
-  total_c = nrow(Find_loc)
-  return(total_c)
+                     mart = genome),TRUE)
+  seq2 = try(getSequence(id = ENS, 
+                         type = type, 
+                         seqType = seqType,
+                         downstream = downstream,
+                         mart = genome),TRUE)
+  
+  if(isTRUE(class(seq1)=="try-error" | class(seq1)=="try-error")) {
+    return('Find Error')
+    next 
+  } else { 
+    seq1 = getSequence(id = ENS, 
+                           type = type, 
+                           seqType = seqType,
+                           upstream = upstream,
+                           mart = genome)
+    seq_p1 = c(seq1[1]);attributes(seq_p1) = NULL
+    seq2 = getSequence(id = ENS, 
+                           type = type, 
+                           seqType = seqType,
+                           downstream = downstream,
+                           mart = genome)
+    seq_p2 = unlist(seq2[1]);attributes(seq_p2) = NULL
+    seq_all = paste(seq_p1,
+                    substring(seq_p2,nchar(seq_p2) - downstream + 1,nchar(seq_p2)),
+                    sep = '')
+    # nchar(seq_all)
+    Find_loc = data.frame(str_locate_all(seq_all,find))
+    total_c = nrow(Find_loc)
+    return(total_c)
+  }
 }
+
 
 Gene_all = unique(rownames(networkData_normalized))
 Gene_net = unique(rownames(networkData_50var_nocrt))
-
 #Gene_all = Gene_all_total[1:5000]
 Genes_C_count_all = data.frame(Gene = c(),
                                total = c())
 for (i in seq_along(Gene_all)){
   message('Working on ',Gene_all[i])
   Genes_C_count_all[i,1] = Gene_all[i]
-  Genes_C_count_all[i,2] = try(AGCTcount(Gene_all[i],genome = genome),TRUE)
-  if(isTRUE(class(Genes_C_count_all[i,2])=="try-error")) {
-    Genes_C_count_all[i,2] = 'error'
-    message('Find error with ', Gene_all[i])
-    next 
-  } else { 
-      Genes_C_count_all[i,2] = AGCTcount(Gene_all[i],genome = genome)
-      }
+  Count = AGCTcount(Gene_all[i],genome = genome)
+  Genes_C_count_all[i,2] = Count
+  print(Count)
 }
 
 save(Genes_C_count_all,file = 'Genes_C_count_all.RData')
+
+
+
+# AGCTcount('ENSBTAG00000005925',genome = genome)
+# 
+# 
+# inputs = list(1, 2, 4,'oops',1,2,4)
+# for(input in inputs) {
+#   x = try(log(input),TRUE)
+#   if(isTRUE(class(x)=="try-error")) {
+#     print('error')
+#     next 
+#   } else { 
+#     x = log(input)
+#     print(x)
+#   }
+#  }
 
 # for (i in c(1:5)) {
 #   

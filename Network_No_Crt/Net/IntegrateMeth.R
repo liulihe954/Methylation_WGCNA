@@ -61,6 +61,20 @@ dev.off()
 ######=========================##########
 ##        Hyper G test                ##
 ######========================##########
+# custom function to transpose while preserving names
+transpose_df <- function(df) {
+  t_df <- data.table::transpose(df)
+  colnames(t_df) <- rownames(df)
+  rownames(t_df) <- colnames(df)
+  t_df <- t_df %>%
+    tibble::rownames_to_column(.data = .) %>%
+    tibble::as_tibble(.) %>% 
+    `colnames<-`(.[1,]) %>%
+    .[-1,] %>%
+    `rownames<-`(NULL)
+  return(t_df)
+}
+
 setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 library(readxl)
 library(tidyverse)
@@ -68,31 +82,65 @@ DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
 # data pre
 DiffC2Gene = DiffC2Gene_raw %>% 
   dplyr::filter(Gene != '-') %>% 
-  group_by(Gene) %>% dplyr::count(Region)
-# loop
-gene_index = unique(DiffC2Gene$Gene)
-Region1 = c('1st_EXON','GENE_BODY','INTRON')
-Region2 = c('PROMOTER','TSS','UPSTREAM')
-Gene_Sig_status1 = tibble()
-Gene_Sig_status2 = tibble()
-for (i in seq_along(gene_index)){
-  anchor = gene_index[i]
-  if (i%%100 == 0) message('Wokring On ',anchor)
-  tmp1 = DiffC2Gene %>% dplyr::filter(Gene == anchor) %>%
-    dplyr::filter(Region %in% Region1) %>% 
-    mutate(Count = sum(n)) %>% 
-    mutate(SigG = ifelse(Count > 30, "Sig", "Not"))
-  tmp2 = DiffC2Gene %>% dplyr::filter(Gene == anchor) %>%
-    dplyr::filter(Region %in% Region2) %>% 
-    mutate(Count = sum(n)) %>% 
-    mutate(SigG = ifelse(Count > 5, "Sig", "Not"))
-  Gene_Sig_status1 = bind_rows(Gene_Sig_status1,tmp1)
-  Gene_Sig_status2 = bind_rows(Gene_Sig_status2,tmp2)
-}
-save(Gene_Sig_status1,Gene_Sig_status2,file = 'Gene_Sig_status.RData')
+  group_by(Gene) %>% dplyr::count(Region) %>% 
+  tidyr::spread(key = Gene, value = n) %>% 
+  transpose_df() %>% 
+  replace(is.na(.), 0) %>% 
+  mutate_at(vars(-Region), as.numeric) %>% 
+  rename(Gene = Region)
 
-table(Gene_Sig_status1$SigG)
-table(Gene_Sig_status2$SigG)
+DiffC2Gene_count = DiffC2Gene %>% 
+  mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
+  mutate(SigG1 = ifelse(Count1 > 30, "Sig", "Not")) %>% 
+  mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
+  mutate(SigG2 = ifelse(Count2 > 5, "Sig", "Not"))
+
+DiffC2Gene_sig = DiffC2Gene_count %>% 
+  dplyr::filter(SigG1 == 'Sig' | SigG2 == 'Sig' )
+
+DiffC2Gene_sig %>% print(n = 200)
+
+save(DiffC2Gene,
+     DiffC2Gene_count,
+     DiffC2Gene_sig,file = 'DiffC2Gene_Sig_Genes.RData')
+
+# get sig diff C gene
+Sig_gene_index = unique(DiffC2Gene_sig$Gene)
+
+## get module index 
+ref=1; test = 2
+Z.PreservationStats=mp$preservation$Z[[ref]][[test]]
+Zsummary=Z.PreservationStats$Zsummary.pres
+nonpres_index_b = (which(Zsummary < 2))
+nonpres_modulenames_b = rownames(Z.PreservationStats)[nonpres_index_b]
+Mod_Index_NonPre  = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
+Mod_Index_Pre = rownames(Z.PreservationStats)[-nonpres_index_b]
+
+
+# get module assign and seperate them
+Gene_all = unique(rownames(networkData_normalized))
+Gene_net = unique(rownames(networkData_50var_nocrt))
+Module_assign_all = data.frame(Gene = Gene_net,
+                               Assign = moduleColors_control)
+
+UnPreserved_Gene_list = list()
+for ( i in seq_along(Mod_Index_NonPre)){
+  tmp = as.character(subset(Module_assign_all,Assign == Mod_Index_NonPre[i])$Gene)
+  UnPreserved_Gene_list[[i]] = tmp #
+  names(UnPreserved_Gene_list)[i]= Mod_Index_NonPre[i]
+}
+
+Preserved_Gene_list = list()
+Mod_Index_Pre = Mod_Index_Pre[-grep('gold',Mod_Index_Pre)]
+for ( i in seq_along(Mod_Index_Pre)){
+  tmp = as.character(subset(Module_assign_all,Assign == Mod_Index_Pre[i])$Gene)
+  Preserved_Gene_list[[i]] = tmp #
+  names(Preserved_Gene_list)[i]= Mod_Index_Pre[i]
+}
+
+
+table(Sig_gene_index%in%Gene_all)
+table(Sig_gene_index%in%Gene_net)
 
 
 ######=========================##########
