@@ -127,8 +127,6 @@ AGCTcount = function(ENS,
   }
 }
 
-which(Gene_all == 'ENSBTAG00000005635')
-
 Gene_all = unique(rownames(networkData_normalized))
 Gene_net = unique(rownames(networkData_50var_nocrt))
 #Gene_all = Gene_all_total[1:5000]
@@ -140,9 +138,9 @@ for (i in seq_along(Gene_all)){
   Count = AGCTcount(Gene_all[i],genome = genome)
   Genes_C_count_all[i,2] = Count
   print(Count)
+  save(Genes_C_count_all,file = 'Genes_C_count_all.RData')
 }
 
-save(Genes_C_count_all,file = 'Genes_C_count_all.RData')
 
 # AGCTcount('ENSBTAG00000005925',genome = genome)
 # 
