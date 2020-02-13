@@ -91,14 +91,14 @@ DiffC2Gene = DiffC2Gene_raw %>%
 
 DiffC2Gene_count = DiffC2Gene %>% 
   mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
-  mutate(SigG1 = ifelse(Count1 > 30, "Sig", "Not")) %>% 
+  mutate(SigG1 = ifelse(Count1 > 40, "Sig", "Not")) %>% 
   mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
   mutate(SigG2 = ifelse(Count2 > 5, "Sig", "Not"))
 
 DiffC2Gene_sig = DiffC2Gene_count %>% 
   dplyr::filter(SigG1 == 'Sig' | SigG2 == 'Sig' )
 
-DiffC2Gene_sig %>% print(n = 200)
+dim(DiffC2Gene_sig)
 
 save(DiffC2Gene,
      DiffC2Gene_count,
@@ -142,7 +142,11 @@ for ( i in seq_along(Mod_Index_Pre)){
 table(Sig_gene_index%in%Gene_all)
 table(Sig_gene_index%in%Gene_net)
 
-
+getOption("max.print")
+test = listAttributes(genome)
+test[334:dim(test)[1],]
+test[666:dim(test)[1],]
+test[998:dim(test)[1],]
 ######=========================##########
 ##        Myth_extent porp            ##
 ######========================##########

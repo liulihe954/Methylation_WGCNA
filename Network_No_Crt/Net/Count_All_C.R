@@ -101,7 +101,7 @@ AGCTcount = function(ENS,
                          downstream = downstream,
                          mart = genome),TRUE)
   
-  if(isTRUE(class(seq1)=="try-error" | class(seq1)=="try-error")) {
+  if(isTRUE(class(seq1)=="try-error"|class(seq2)=="try-error")) {
     return('Find Error')
     next 
   } else { 
@@ -127,6 +127,7 @@ AGCTcount = function(ENS,
   }
 }
 
+which(Gene_all == 'ENSBTAG00000005635')
 
 Gene_all = unique(rownames(networkData_normalized))
 Gene_net = unique(rownames(networkData_50var_nocrt))
@@ -142,8 +143,6 @@ for (i in seq_along(Gene_all)){
 }
 
 save(Genes_C_count_all,file = 'Genes_C_count_all.RData')
-
-
 
 # AGCTcount('ENSBTAG00000005925',genome = genome)
 # 
