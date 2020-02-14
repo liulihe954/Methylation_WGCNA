@@ -79,6 +79,7 @@ setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 library(readxl)
 library(tidyverse)
 DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
+dim(DiffC2Gene_raw)
 # data pre
 DiffC2Gene = DiffC2Gene_raw %>% 
   dplyr::filter(Gene != '-') %>% 
@@ -147,6 +148,7 @@ test = listAttributes(genome)
 test[334:dim(test)[1],]
 test[666:dim(test)[1],]
 test[998:dim(test)[1],]
+
 ######=========================##########
 ##        Myth_extent porp            ##
 ######========================##########
@@ -215,4 +217,18 @@ Gene_DiffC_index = unique(DiffC2Gene.extend$Gene)
 
 #length(unique(Gene_DiffC_index))
 #table(Gene_DiffC_index %in% Gene_all)
+
+### massage diff C associated gene
+Associ_out_raw = read.table('myassociations2.txt',sep = '\t') %>% data.frame()
+cname =as.character(unlist(Associ_out_raw[1,]));attributes(cname) = NULL
+colnames(Associ_out_raw) = cname
+Associ_out_raw= Associ_out_raw[-1,]
+####
+length(table(Associ_out_raw$Gene))
+table(Associ_out_raw$Area)
+
+Associ_within 
+
+Associ_up
+
 

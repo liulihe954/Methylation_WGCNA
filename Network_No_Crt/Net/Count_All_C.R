@@ -67,7 +67,7 @@ load('network_final.RData')
 library(readxl)
 library(tidyverse)
 # DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
-# DiffC2Gene.extend = DiffC2Gene_raw %>% 
+# DiffC2Gene.extend = DiffC2Gene_raw %>%
 #   dplyr::filter(Gene != '-')
 
 # genome pre
@@ -91,10 +91,10 @@ AGCTcount = function(ENS,
   add = function(x, sep = ''){paste("chr",x,sep = sep)}
   # generates 5' to 3' sequences of the requested type on the correct strand
   seq1 = try(getSequence(id = ENS, 
-                     type = type, 
-                     seqType = seqType,
-                     upstream = upstream,
-                     mart = genome),TRUE)
+                         type = type, 
+                         seqType = seqType,
+                         upstream = upstream,
+                         mart = genome),TRUE)
   seq2 = try(getSequence(id = ENS, 
                          type = type, 
                          seqType = seqType,
@@ -106,16 +106,16 @@ AGCTcount = function(ENS,
     next 
   } else { 
     seq1 = getSequence(id = ENS, 
-                           type = type, 
-                           seqType = seqType,
-                           upstream = upstream,
-                           mart = genome)
+                       type = type, 
+                       seqType = seqType,
+                       upstream = upstream,
+                       mart = genome)
     seq_p1 = c(seq1[1]);attributes(seq_p1) = NULL
     seq2 = getSequence(id = ENS, 
-                           type = type, 
-                           seqType = seqType,
-                           downstream = downstream,
-                           mart = genome)
+                       type = type, 
+                       seqType = seqType,
+                       downstream = downstream,
+                       mart = genome)
     seq_p2 = unlist(seq2[1]);attributes(seq_p2) = NULL
     seq_all = paste(seq_p1,
                     substring(seq_p2,nchar(seq_p2) - downstream + 1,nchar(seq_p2)),
@@ -127,9 +127,6 @@ AGCTcount = function(ENS,
   }
 }
 
-Gene_all = unique(rownames(networkData_normalized))
-Gene_net = unique(rownames(networkData_50var_nocrt))
-#Gene_all = Gene_all_total[1:5000]
 Genes_C_count_all = data.frame(Gene = c(),
                                total = c())
 for (i in seq_along(Gene_all)){
@@ -138,9 +135,17 @@ for (i in seq_along(Gene_all)){
   Count = AGCTcount(Gene_all[i],genome = genome)
   Genes_C_count_all[i,2] = Count
   print(Count)
-  save(Genes_C_count_all,file = 'Genes_C_count_all.RData')
 }
 
+save(Genes_C_count_all,file = 'Genes_C_count_all_2.RData')
+
+load('Genes_C_count_all_2.RData')
+dim(Genes_C_count_all)
+colnames(Genes_C_count_all) = c('Gene', 'Total_CG')
+Genes_C_count_all_single = data.frame(Gene = 'ENSBTAG00000005635',Total_CG = 719)
+Genes_C_count_all = rbind(Genes_C_count_all,Genes_C_count_all_single) %>% arrange(Gene)
+
+save(Genes_C_count_all,file = 'Genes_C_count_all_Final.RData')
 
 # AGCTcount('ENSBTAG00000005925',genome = genome)
 # 
@@ -193,5 +198,4 @@ for (i in seq_along(Gene_all)){
 # 
 # Find_loc = data.frame(str_locate_all(test,'CG'))
 # Find_loc2 = data.frame(str_locate_all(seq_all,'CG'))
-# 
 # 
