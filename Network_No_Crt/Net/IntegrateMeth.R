@@ -85,14 +85,14 @@ DiffC2Gene = DiffC2Gene_raw %>%
   dplyr::filter(Gene != '-') %>% 
   group_by(Gene) %>% dplyr::count(Region) %>% 
   tidyr::spread(key = Gene, value = n) %>% 
-  transpose_df() %>% 
+  transpose_df()%>% 
   replace(is.na(.), 0) %>% 
   mutate_at(vars(-Region), as.numeric) %>% 
   rename(Gene = Region)
 
 DiffC2Gene_count = DiffC2Gene %>% 
   mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
-  mutate(SigG1 = ifelse(Count1 > 40, "Sig", "Not")) %>% 
+  mutate(SigG1 = ifelse(Count1 > 30, "Sig", "Not")) %>% 
   mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
   mutate(SigG2 = ifelse(Count2 > 5, "Sig", "Not"))
 
@@ -156,10 +156,10 @@ test[998:dim(test)[1],]
 setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 library(readxl)
 library(tidyverse)
-DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
-DiffC2Gene.extend = DiffC2Gene_raw %>% 
-  dplyr::filter(Gene != '-')
-
+# DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
+# DiffC2Gene.extend = DiffC2Gene_raw %>% 
+#   dplyr::filter(Gene != '-')
+head(DiffC2Gene.extend)
 # genome pre
 genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
 gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_position", "end_position", "chromosome_name"), mart = genome)
@@ -224,11 +224,60 @@ cname =as.character(unlist(Associ_out_raw[1,]));attributes(cname) = NULL
 colnames(Associ_out_raw) = cname
 Associ_out_raw= Associ_out_raw[-1,]
 ####
-length(table(Associ_out_raw$Gene))
-table(Associ_out_raw$Area)
+transpose2_df <- function(df) {
+  t_df <- data.table::transpose(df)
+  colnames(t_df) <- rownames(df)
+  rownames(t_df) <- colnames(df)
+  t_df <- t_df %>%
+    tibble::rownames_to_column(.data = .) %>%
+    tibble::as_tibble(.) %>% 
+  return(t_df)
+}
 
-Associ_within 
+Associ_out =  Associ_out_raw %>% 
+  dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
+  group_by(Gene) %>% 
+  dplyr::count(Area) %>%
+  tidyr::spread(key = Gene, value = n) %>% 
+  transpose_df() %>% 
+  replace(is.na(.), 0) %>% 
+  mutate_at(vars(-Area), as.numeric) %>% 
+  rename(Gene = Area)
+
+Associ_out_count = Associ_out %>% 
+  mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
+  mutate(SigG1 = ifelse(Count1 > 30, "Sig", "Not")) %>% 
+  mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
+  mutate(SigG2 = ifelse(Count2 > 5, "Sig", "Not"))
+
+DiffC2Gene_sig = DiffC2Gene_count %>% 
+  dplyr::filter(SigG1 == 'Sig' | SigG2 == 'Sig' )
+
+
+secondlist = DiffC2Gene_sig %>% 
+  dplyr::filter(SigG1 == 'Sig' | SigG2 =='Sig') %>% 
+  dplyr::select(Gene)
+secondlist2 = unlist(secondlist);attributes(secondlist2) = NULL
+
+secondlist3 = DiffC2Gene_sig %>% 
+  dplyr::select(Gene)
+secondlist4 = unlist(secondlist3)
+attributes(secondlist4) = NULL
+
+table(secondlist4 %in% secondlist2)
+table(secondlist2 %in% secondlist4)
+
+class(secondlist3)
+
+head(Associ_out_count)
+
+summary(Associ_out_count$Count2)
+
+
+Associ_within
+
 
 Associ_up
+
 
 
