@@ -253,7 +253,6 @@ Associ_out_count = Associ_out %>%
 DiffC2Gene_sig = DiffC2Gene_count %>% 
   dplyr::filter(SigG1 == 'Sig' | SigG2 == 'Sig' )
 
-
 secondlist = DiffC2Gene_sig %>% 
   dplyr::filter(SigG1 == 'Sig' | SigG2 =='Sig') %>% 
   dplyr::select(Gene)
@@ -263,21 +262,6 @@ secondlist3 = DiffC2Gene_sig %>%
   dplyr::select(Gene)
 secondlist4 = unlist(secondlist3)
 attributes(secondlist4) = NULL
-
-table(secondlist4 %in% secondlist2)
-table(secondlist2 %in% secondlist4)
-
-class(secondlist3)
-
-head(Associ_out_count)
-
-summary(Associ_out_count$Count2)
-
-
-Associ_within
-
-
-Associ_up
 
 
 
