@@ -15,52 +15,27 @@ load("module_colorsNlabels_control.RData")
 load("Enrich_Ensentials.RData")
 load("Ensembl2Entrez_Convert.RData")
 load('network_final.RData')
-load('MethEval_all.RData')
+#load('MethEval_all.RData')
 
-# Gather Info: KME and Meth
-datKME_tmp = signedKME(datExpr_control, MEs_control)
-datKME = datKME_tmp %>% 
-  dplyr::mutate(ensembl_gene_id = rownames(datKME_tmp)) %>% 
-  dplyr::mutate(MdouleAssign = moduleColors_control) %>% 
-  dplyr::left_join(Meth_prmt, by= c("ensembl_gene_id" = "ensembl_gene_id"))
-  #%>% dplyr::filter(meth != 1)
-head(datKME)
-summary(datKME$meth)
-table(datKME$ensembl_gene_id%in% Meth_prmt$ensembl_gene_id)
 
-######=========================##########
-##            Index Pre                ##
-######=========================##########
-ref=1; test = 2
-Z.PreservationStats=mp$preservation$Z[[ref]][[test]]
-Zsummary=Z.PreservationStats$Zsummary.pres
-#
-nonpres_index_b = (which(Zsummary < 2))
-nonpres_modulenames_b = rownames(Z.PreservationStats)[nonpres_index_b]
-Mod_Index_NonPre  = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
-Mod_Index_Pre = rownames(Z.PreservationStats)[-nonpres_index_b]
+# counted ALL Cs 
+# measure meth level
+# run rgmatch find the Diff C location/ gene assignments
+## ================================================================================================================== ##
+#     python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b Diff_C_Sig_BED.bed -r 'gene' -q 5 -o myassociations.txt    ##
+## ================================================================================================================== ##
+Data_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net'
+#setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net')
+setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch')
+#Associ_out_raw = read.table('myassociations_gene_new.txt',sep = '\t') %>% data.frame()
+Associ_out_raw = read.table('myassociations_exon_new.txt',sep = '\t') %>% data.frame()
+setwd(Data_loci)
 
-######=========================##########
-##        diff C prop vs M.M           ##
-######=========================##########
-# 
-pdf('PDF_Results.pdf')
-for (i in seq_along(Mod_Index_NonPre)){
-  text = Mod_Index_NonPre[i]
-  sub = paste('kME',text,sep = '')
-  print(ggplot(datKME,aes(x=get(sub),y=meth)) + 
-    geom_point(colour="grey") +
-    geom_point(data = subset(datKME,MdouleAssign == text), 
-               aes(x=get(sub),y=meth),colour="red", size=1)+
-    ggtitle(paste("Methylation VS ModuleMembership",text,sep='-')) +
-    xlab("InModule_Con") + ylab("MethC_Prop")+
-    theme(plot.title = element_text(hjust = 0.5)))
-}
-dev.off()
-
-######=========================##########
-##        Hyper G test                ##
-######========================##########
+### massage diff C associated gene
+cname =as.character(unlist(Associ_out_raw[1,]));attributes(cname) = NULL
+colnames(Associ_out_raw) = cname
+Associ_out_raw= Associ_out_raw[-1,]
+####
 # custom function to transpose while preserving names
 transpose_df <- function(df) {
   t_df <- data.table::transpose(df)
@@ -74,6 +49,111 @@ transpose_df <- function(df) {
     `rownames<-`(NULL)
   return(t_df)
 }
+#head(Associ_out,100) %>% print(n = Inf)
+Associ_out =  Associ_out_raw %>% 
+  dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
+  group_by(Gene) %>% 
+  dplyr::count(Area) %>%
+  tidyr::spread(key = Gene, value = n) %>% 
+  transpose_df() %>% 
+  replace(is.na(.), 0) %>% 
+  mutate_at(vars(-Area), as.numeric) %>% 
+  dplyr::rename(Gene = Area)
+
+Associ_out_count = Associ_out %>% 
+  mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
+  mutate(SigG1 = ifelse(Count1 > 30, "Sig", "Not")) %>% 
+  mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
+  mutate(SigG2 = ifelse(Count2 > 5, "Sig", "Not"))
+
+DiffC2Gene_sig = Associ_out_count %>% 
+  dplyr::filter(SigG1 == 'Sig' | SigG2 == 'Sig' )
+
+# sig meth gene whole genome
+Gene_DiffC_index = unique(DiffC2Gene_sig$Gene)
+
+# count all Cs using self-wraped function: AGCTcount (getSEQ from biomart mainly)
+load('Genes_C_count_all_Final.RData')
+Genes_C_count_all = Genes_C_count_all %>% 
+  mutate_at(vars(Total_CG),as.numeric) %>% 
+  replace(is.na(.), 0)
+
+## calculate proption of diff Cs
+"/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
+Genes_meth_prop = Genes_C_count_all %>% 
+  dplyr::left_join(Associ_out_count, by = c('Gene' = 'Gene')) %>% 
+  dplyr::select(Gene,Total_CG,Count1,Count2) %>% 
+  replace(is.na(.), 0) %>% 
+  mutate(Count_all = Count1 + Count2) %>% 
+  mutate(Diff_Prop = Count_all/Total_CG)
+#save(Genes_meth_prop,file = 'Genes_meth_prop.txt')
+save(Genes_meth_prop,file = 'Genes_meth_prop.rda')
+
+#dim(Genes_meth_prop)
+
+# gene index pre
+Gene_all_rna = unique(rownames(networkData_normalized))
+Gene_all_net = unique(rownames(networkData_50var_nocrt)) 
+
+# Gather Info: KME and Meth
+load('Genes_meth_prop.rda')
+datKME_tmp = signedKME(datExpr_control, MEs_control)
+datKME = datKME_tmp %>% 
+  dplyr::mutate(Gene = rownames(datKME_tmp)) %>% 
+  dplyr::mutate(MdouleAssign = moduleColors_control) %>% 
+  dplyr::left_join(Genes_meth_prop, by= c("Gene" = "Gene")) %>% 
+  dplyr::mutate(Scale_prop = Diff_Prop/max(Diff_Prop)) #%>% 
+  d%>% plyr::filter(Scale_prop != 1)
+head(datKME)
+summary(datKME$Scale_prop)
+
+######=========================##########
+##            Index Pre                ##
+######=========================##########
+ref=1; test = 2
+Z.PreservationStats=mp$preservation$Z[[ref]][[test]]
+Zsummary=Z.PreservationStats$Zsummary.pres
+#
+nonpres_index_b = (which(Zsummary < 2))
+nonpres_modulenames_b = rownames(Z.PreservationStats)[nonpres_index_b]
+Mod_Index_NonPre  = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
+Mod_Index_Pre = rownames(Z.PreservationStats)[-nonpres_index_b]
+Mod_Index_Pre = Mod_Index_Pre[-grep('gold',Mod_Index_Pre)]
+######=========================##########
+##        diff C prop vs M.M           ##
+######=========================##########
+#
+pdf('PDF_Results_NonP.pdf')
+for (i in seq_along(Mod_Index_NonPre)){
+  text = Mod_Index_NonPre[i]
+  sub = paste('kME',text,sep = '')
+  print(ggplot(datKME,aes(x=get(sub),y = Scale_prop)) + 
+    geom_point(colour="grey") +
+    geom_point(data = subset(datKME, MdouleAssign == text), 
+               aes(x=get(sub),y = Scale_prop),colour="red", size=1)+
+    ggtitle(paste("Methylation VS ModuleMembership",text,sep='-')) +
+    xlab("InModule_Con") + ylab("MethC_Prop")+
+    theme(plot.title = element_text(hjust = 0.5)))
+}
+dev.off()
+
+pdf('PDF_Results_PreS.pdf')
+for (i in seq_along(Mod_Index_Pre)){
+  text = Mod_Index_Pre[i]
+  sub = paste('kME',text,sep = '')
+  print(ggplot(datKME,aes(x=get(sub),y = Scale_prop)) + 
+          geom_point(colour="grey") +
+          geom_point(data = subset(datKME, MdouleAssign == text), 
+                     aes(x=get(sub),y = Scale_prop),colour="red", size=1)+
+          ggtitle(paste("Methylation VS ModuleMembership",text,sep='-')) +
+          xlab("InModule_Con") + ylab("MethC_Prop")+
+          theme(plot.title = element_text(hjust = 0.5)))
+}
+dev.off()
+
+######=========================##########
+##        Hyper G test                ##
+######========================##########
 
 setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 library(readxl)
@@ -139,16 +219,6 @@ for ( i in seq_along(Mod_Index_Pre)){
   names(Preserved_Gene_list)[i]= Mod_Index_Pre[i]
 }
 
-
-table(Sig_gene_index%in%Gene_all)
-table(Sig_gene_index%in%Gene_net)
-
-getOption("max.print")
-test = listAttributes(genome)
-test[334:dim(test)[1],]
-test[666:dim(test)[1],]
-test[998:dim(test)[1],]
-
 ######=========================##########
 ##        Myth_extent porp            ##
 ######========================##########
@@ -166,102 +236,4 @@ gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_posi
 gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>% 
   arrange(ensembl_gene_id) %>% 
   dplyr::mutate_at(vars(chromosome_name),add)
-
-# function pre
-library(biomaRt)
-AGCTcount = function(ENS,
-                     genome = genome,
-                     type = "ensembl_gene_id", 
-                     seqType = "gene_exon_intron",
-                     upstream = 5000,
-                     downstream = 5000,
-                     find = 'CG'){
-  library(tidyverse)
-  library(biomaRt)
-  add = function(x, sep = ''){paste("chr",x,sep = sep)}
-  # generates 5' to 3' sequences of the requested type on the correct strand
-  seq1 = getSequence(id = ENS, 
-                     type = type, 
-                     seqType = seqType,
-                     upstream = upstream,
-                     mart = genome)
-  seq_p1 = c(seq1[1]);attributes(seq_p1) = NULL
-  seq2 = getSequence(id = ENS, 
-                     type = type, 
-                     seqType = seqType,
-                     downstream = downstream,
-                     mart = genome)
-  seq_p2 = unlist(seq2[1]);attributes(seq_p2) = NULL
-  seq_all = paste(seq_p1,
-                  substring(seq_p2,nchar(seq_p2)-downstream + 1,nchar(seq_p2)),
-                  sep = '')
-  nchar(seq_all)
-  Find_loc = data.frame(str_locate_all(seq_all,find))
-  total_c = nrow(Find_loc)
-  return(total_c)
-}
-
-Genes_C_count_all = data.frame(Gene = c(),
-                               total = c())
-for (i in seq_along(Gene_all)){
-  Genes_C_count_all[i,1] = Gene_all[i]
-  Genes_C_count_all[i,2] = AGCTcount(Gene_all[i],genome = genome)
-  message('Working on ',Gene_all[i])
-}
-
-#
-Gene_all = unique(rownames(networkData_normalized))
-Gene_net = unique(rownames(networkData_50var_nocrt)) 
-#
-Gene_DiffC_index = unique(DiffC2Gene.extend$Gene)
-
-#length(unique(Gene_DiffC_index))
-#table(Gene_DiffC_index %in% Gene_all)
-
-### massage diff C associated gene
-Associ_out_raw = read.table('myassociations2.txt',sep = '\t') %>% data.frame()
-cname =as.character(unlist(Associ_out_raw[1,]));attributes(cname) = NULL
-colnames(Associ_out_raw) = cname
-Associ_out_raw= Associ_out_raw[-1,]
-####
-transpose2_df <- function(df) {
-  t_df <- data.table::transpose(df)
-  colnames(t_df) <- rownames(df)
-  rownames(t_df) <- colnames(df)
-  t_df <- t_df %>%
-    tibble::rownames_to_column(.data = .) %>%
-    tibble::as_tibble(.) %>% 
-  return(t_df)
-}
-
-Associ_out =  Associ_out_raw %>% 
-  dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
-  group_by(Gene) %>% 
-  dplyr::count(Area) %>%
-  tidyr::spread(key = Gene, value = n) %>% 
-  transpose_df() %>% 
-  replace(is.na(.), 0) %>% 
-  mutate_at(vars(-Area), as.numeric) %>% 
-  rename(Gene = Area)
-
-Associ_out_count = Associ_out %>% 
-  mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
-  mutate(SigG1 = ifelse(Count1 > 30, "Sig", "Not")) %>% 
-  mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
-  mutate(SigG2 = ifelse(Count2 > 5, "Sig", "Not"))
-
-DiffC2Gene_sig = DiffC2Gene_count %>% 
-  dplyr::filter(SigG1 == 'Sig' | SigG2 == 'Sig' )
-
-secondlist = DiffC2Gene_sig %>% 
-  dplyr::filter(SigG1 == 'Sig' | SigG2 =='Sig') %>% 
-  dplyr::select(Gene)
-secondlist2 = unlist(secondlist);attributes(secondlist2) = NULL
-
-secondlist3 = DiffC2Gene_sig %>% 
-  dplyr::select(Gene)
-secondlist4 = unlist(secondlist3)
-attributes(secondlist4) = NULL
-
-
 
