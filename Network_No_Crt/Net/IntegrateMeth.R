@@ -102,7 +102,6 @@ save(Genes_meth_prop,
      Diff_Meth_Gene_index,
      file = 'Genes_meth_prop.rda')
 
-
 # Gather Info: KME and Meth
 load('Genes_meth_prop.rda')
 datKME_tmp = signedKME(datExpr_control, MEs_control)
@@ -166,18 +165,18 @@ dev.off()
 ######========================##########
 setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 
-library(biomaRt)
-genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
-gene = getBM(c("ensembl_gene_id","external_gene_name", "start_position", "end_position", "chromosome_name"), mart = genome)
-Gene_genome = unique(gene$ensembl_gene_id)
-
-table(Gene_all %in% Gene_genome)
-'%!in%' <- function(x,y)!('%in%'(x,y))
-table(Gene_net %in% Gene_genome)
-test = Gene_net[which(Gene_net %!in% Gene_genome)]
-head(test)
-
-Diff_Meth_Gene_index[which(Diff_Meth_Gene_index%in%test)]
+# library(biomaRt)
+# genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
+# gene = getBM(c("ensembl_gene_id","external_gene_name", "start_position", "end_position", "chromosome_name"), mart = genome)
+# Gene_genome = unique(gene$ensembl_gene_id)
+# 
+# table(Gene_all %in% Gene_genome)
+# '%!in%' <- function(x,y)!('%in%'(x,y))
+# table(Gene_net %in% Gene_genome)
+# test = Gene_net[which(Gene_net %!in% Gene_genome)]
+# head(test)
+# 
+# Diff_Meth_Gene_index[which(Diff_Meth_Gene_index%in%test)]
 
 # gene index pre
 Genes_meth_select = Genes_meth_prop %>% 

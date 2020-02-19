@@ -70,111 +70,103 @@ library(tidyverse)
 # DiffC2Gene.extend = DiffC2Gene_raw %>%
 #   dplyr::filter(Gene != '-')
 
+
+
+
 # genome pre
 library(biomaRt)
 # genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
 # gene = getBM(c("ensembl_gene_id","external_gene_name", "start_position", "end_position", "chromosome_name"), mart = genome)
 # Gene_genome = length(gene$ensembl_gene_id)
-# gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>% 
-#   arrange(ensembl_gene_id) %>% 
+# gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>%
+#   arrange(ensembl_gene_id) %>%
 #   dplyr::mutate_at(vars(chromosome_name),add)
 
-# function pre
-AGCTcount = function(ENS,
-                     genome = genome,
-                     type = "ensembl_gene_id", 
-                     seqType = "gene_exon_intron",
-                     upstream = 5000,
-                     downstream = 5000,
-                     find = 'CG'){
-  library(tidyverse)
-  library(biomaRt)
-  add = function(x, sep = ''){paste("chr",x,sep = sep)}
-  # generates 5' to 3' sequences of the requested type on the correct strand
-  seq1 = try(getSequence(id = ENS, 
-                         type = type, 
-                         seqType = seqType,
-                         upstream = upstream,
-                         mart = genome),TRUE)
-  seq2 = try(getSequence(id = ENS, 
-                         type = type, 
-                         seqType = seqType,
-                         downstream = downstream,
-                         mart = genome),TRUE)
-  
-  if(isTRUE(class(seq1)=="try-error"|class(seq2)=="try-error")) {
-    return('Find Error')
-    next 
-  } else { 
-    seq1 = getSequence(id = ENS, 
-                       type = type, 
-                       seqType = seqType,
-                       upstream = upstream,
-                       mart = genome)
-    seq_p1 = c(seq1[1]);attributes(seq_p1) = NULL
-    seq2 = getSequence(id = ENS, 
-                       type = type, 
-                       seqType = seqType,
-                       downstream = downstream,
-                       mart = genome)
-    seq_p2 = unlist(seq2[1]);attributes(seq_p2) = NULL
-    seq_all = paste(seq_p1,
-                    substring(seq_p2,nchar(seq_p2) - downstream + 1,nchar(seq_p2)),
-                    sep = '')
-    # nchar(seq_all)
-    Find_loc = data.frame(str_locate_all(seq_all,find))
-    total_c = nrow(Find_loc)
-    return(total_c)
-  }
+# # function pre
+# AGCTcount = function(ENS,
+#                      genome = genome,
+#                      type = "ensembl_gene_id", 
+#                      seqType = "gene_exon_intron",
+#                      upstream = 5000,
+#                      downstream = 5000,
+#                      find = 'CG'){
+#   library(tidyverse)
+#   library(biomaRt)
+#   add = function(x, sep = ''){paste("chr",x,sep = sep)}
+#   # generates 5' to 3' sequences of the requested type on the correct strand
+#   seq1 = try(getSequence(id = ENS, 
+#                          type = type, 
+#                          seqType = seqType,
+#                          upstream = upstream,
+#                          mart = genome),TRUE)
+#   seq2 = try(getSequence(id = ENS, 
+#                          type = type, 
+#                          seqType = seqType,
+#                          downstream = downstream,
+#                          mart = genome),TRUE)
+#   
+#   if(isTRUE(class(seq1)=="try-error"|class(seq2)=="try-error")) {
+#     return('Find Error')
+#     next 
+#   } else { 
+#     seq1 = getSequence(id = ENS, 
+#                        type = type, 
+#                        seqType = seqType,
+#                        upstream = upstream,
+#                        mart = genome)
+#     seq_p1 = c(unlist(seq1[1]));attributes(seq_p1) = NULL
+#     seq2 = getSequence(id = ENS, 
+#                        type = type, 
+#                        seqType = seqType,
+#                        downstream = downstream,
+#                        mart = genome)
+#     seq_p2 = c(unlist(seq2[1]));attributes(seq_p2) = NULL
+#     seq_all = paste(seq_p1,
+#                     substring(seq_p2,nchar(seq_p2) - downstream + 1,nchar(seq_p2)),
+#                     sep = '')
+#     # nchar(seq_all)
+#     Find_loc = data.frame(str_locate_all(seq_all,find))
+#     total_c = nrow(Find_loc)
+#     return(total_c)
+#   }
+# }
+AGCTcount_api = function(ENS,
+                         upstream = 5000,
+                         downstream = 5000,
+                         find = 'CG'){
+  GeneID = 'ENSBTAG00000000070'
+  library(httr);library(jsonlite);library(xml2)
+  server = "https://rest.ensembl.org"
+  #ext <- "/sequence/id/ENSBTAG00000000070?expand_3prime=5000;expand_5prime=5000"
+  ext = paste( "/sequence/id/",ENS,"?expand_3prime=",upstream,";expand_5prime=",downstream,sep = "")
+  #ext <- "/sequence/id/ENSBTAG00000000070?"
+  r = GET(paste(server, ext, sep = ""), content_type("text/plain"))
+  stop_for_status(r)
+  seq_all = content(r)
+  # nchar(seq_all)
+  Find_loc = data.frame(str_locate_all(seq_all,find))
+  total_c = nrow(Find_loc)
+  return(total_c)
 }
 
-biomart="ensembl"
-dataset="btaurus_gene_ensembl"
-Identifier = "external_gene_name"
-attributes = c("ensembl_gene_id")
+# get all genes _ index
+biomart="ensembl";dataset="btaurus_gene_ensembl";Identifier = "external_gene_name";attributes = c("ensembl_gene_id")
 database = useMart(biomart)
 genome = useDataset(dataset, mart = database)
 gene = getBM(attributes,mart = genome)
 gene_all_v2 = unique(gene$ensembl_gene_id)
 
-load('Genes_C_count_all_Final.RData')
-gene_all_v1 = unique(Genes_C_count_all$Gene)
-'%!in%' <- function(x,y)!('%in%'(x,y))
-gene_all_2extend = gene_all_v2[gene_all_v2%!in%gene_all_v1]
-
-length(gene_all_2extend)
-
-
-Genes_C_count_all_2 = data.frame(Gene = c(),total = c())
-for (i in seq_along(gene_all_2extend)){
-  message('Working on ',gene_all_2extend[i])
-  Genes_C_count_all_2[i,1] = gene_all_2extend[i]
-  Count = AGCTcount(gene_all_2extend[i],genome = genome)
-  Genes_C_count_all_2[i,2] = as.character(Count)
+# 
+Genes_C_count_all_api = data.frame(Gene = c(),total = c())
+for (i in seq_along(gene_all_v2)){
+  message('Working on ',gene_all_v2[i])
+  Genes_C_count_all_api[i,1] = gene_all_v2[i]
+  Count = AGCTcount_api(gene_all_v2[i])
+  Genes_C_count_all_api[i,2] = as.character(Count)
   print(Count)
 }
 
-#Genes_C_count_all_single = data.frame(Gene = 'ENSBTAG00000005635',Total_CG = 719)
-Genes_C_count_all_v2 = rbind(Genes_C_count_all,
-                             Genes_C_count_all_v2) %>% arrange(Gene)
-
-save(Genes_C_count_all_v2,
-     file = 'Genes_C_count_all_Final_v2.RData')
-# 
-# Genes_C_count_all_2 = data.frame(Gene = c(),total = c())
-# for (i in seq_along(gene_all_2extend)){
-#   message('Working on ',gene_all_2extend[i])
-#   Genes_C_count_all_2[i,1] = gene_all_2extend[i]
-#   Count = AGCTcount(gene_all_2extend[i],genome = genome)
-#   Genes_C_count_all_2[i,2] = Count
-#   print(Count)
-# }
-
-# Genes_C_count_all_single = data.frame(Gene = 'ENSBTAG00000005635',Total_CG = 719)
-# Genes_C_count_all = rbind(Genes_C_count_all,Genes_C_count_all_single) %>% arrange(Gene)
-# 
-# save(Genes_C_count_all,file = 'Genes_C_count_all_Final.RData')
-
-
+save(Genes_C_count_all_api,
+     file = 'Genes_C_count_all_Final_api.RData')
 
 
