@@ -22,14 +22,14 @@ load('network_final.RData')
 # measure meth level
 # run rgmatch find the Diff C location/ gene assignments
 ## ================================================================================================================== ##
-#     python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b Diff_C_Sig_BED.bed -r 'gene' -q 5 -o myassociations.txt    ##
+#     python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b Diff_C_Sig_BED.bed -r 'gene' -q 4 -o myassociations.txt    ##
 ## ================================================================================================================== ##
-Data_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net'
-#setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net')
-setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch')
+#Data_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net'
+setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net')
+#setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch')
 #Associ_out_raw = read.table('myassociations_gene_new.txt',sep = '\t') %>% data.frame()
-Associ_out_raw = read.table('myassociations_exon.txt',sep = '\t') %>% data.frame()
-setwd(Data_loci)
+Associ_out_raw = read.table('myassoci_exon_5.5k_ext.txt',sep = '\t') %>% data.frame()
+#setwd(Data_loci)
 
 ### massage diff C associated gene
 cname =as.character(unlist(Associ_out_raw[1,]));attributes(cname) = NULL
@@ -95,6 +95,8 @@ Genes_meth_select = Genes_meth_prop %>%
   arrange(Diff_Prop)
 
 Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
+
+# length(Diff_Meth_Gene_index)
 
 #save(Genes_meth_prop,file = 'Genes_meth_prop.txt')
 save(Genes_meth_prop,

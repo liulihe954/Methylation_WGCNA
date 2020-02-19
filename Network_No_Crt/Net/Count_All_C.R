@@ -131,11 +131,10 @@ library(biomaRt)
 #   }
 # }
 AGCTcount_api = function(ENS,
-                         upstream = 5000,
-                         downstream = 5000,
+                         upstream = 5500,
+                         downstream = 4000,
                          find = 'CG'){
-  GeneID = 'ENSBTAG00000000070'
-  library(httr);library(jsonlite);library(xml2)
+  library(httr);library(jsonlite);library(xml2);library(stringr)
   server = "https://rest.ensembl.org"
   #ext <- "/sequence/id/ENSBTAG00000000070?expand_3prime=5000;expand_5prime=5000"
   ext = paste( "/sequence/id/",ENS,"?expand_3prime=",upstream,";expand_5prime=",downstream,sep = "")
@@ -143,10 +142,15 @@ AGCTcount_api = function(ENS,
   r = GET(paste(server, ext, sep = ""), content_type("text/plain"))
   stop_for_status(r)
   seq_all = content(r)
+  seq_up = substr(seq_all,1,upstream)
   # nchar(seq_all)
-  Find_loc = data.frame(str_locate_all(seq_all,find))
-  total_c = nrow(Find_loc)
-  return(total_c)
+  Find_loc1 = data.frame(str_locate_all(seq_all,find))
+  Find_loc2 = data.frame(str_locate_all(seq_up,find))
+  total_c1 = nrow(Find_loc1)
+  total_c2 = nrow(Find_loc2)
+  return(list(Total = total_c1,
+              Upstream = total_c2))
+  
 }
 
 # get all genes _ index
@@ -157,12 +161,13 @@ gene = getBM(attributes,mart = genome)
 gene_all_v2 = unique(gene$ensembl_gene_id)
 
 # 
-Genes_C_count_all_api = data.frame(Gene = c(),total = c())
+Genes_C_count_all_api = data.frame(Gene = c(),Total = c(),Upstream = c())
 for (i in seq_along(gene_all_v2)){
   message('Working on ',gene_all_v2[i])
   Genes_C_count_all_api[i,1] = gene_all_v2[i]
   Count = AGCTcount_api(gene_all_v2[i])
-  Genes_C_count_all_api[i,2] = as.character(Count)
+  Genes_C_count_all_api[i,2] = as.character(Count[[1]])
+  Genes_C_count_all_api[i,3] = as.character(Count[[2]])
   print(Count)
 }
 
