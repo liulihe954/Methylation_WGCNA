@@ -96,8 +96,6 @@ Genes_meth_select = Genes_meth_prop %>%
 
 Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
 
-# length(Diff_Meth_Gene_index)
-
 #save(Genes_meth_prop,file = 'Genes_meth_prop.txt')
 save(Genes_meth_prop,
      Genes_meth_select,
@@ -182,38 +180,29 @@ setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 
 # gene index pre
 Genes_meth_select = Genes_meth_prop %>% 
-  dplyr::filter((Count1 >= 0 | Count2 >=0)) %>% 
-  dplyr::filter(Diff_Prop>=quantile(Diff_Prop,0)) %>% 
+  dplyr::filter((Count1 >= 30 | Count2 >= 5)) %>% 
+  dplyr::filter(Diff_Prop>=quantile(Diff_Prop,0.5)) %>% 
   arrange(Diff_Prop)
 
 Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
 
-length(Diff_Meth_Gene_index)
-
-table(Diff_Meth_Gene_index %in% Gene_all)
-
-table(Diff_Meth_Gene_index %in% Gene_net)
+#
+Gene_all = unique(rownames(networkData_normalized))
+Gene_net = unique(rownames(networkData_50var_nocrt))
 
 ## get module index
 ref=1; test = 2;Z.PreservationStats=mp$preservation$Z[[ref]][[test]];Zsummary=Z.PreservationStats$Zsummary.pres;nonpres_index_b = (which(Zsummary < 2));nonpres_modulenames_b = rownames(Z.PreservationStats)[nonpres_index_b]
 Mod_Index_NonPre  = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
 Mod_Index_Pre = rownames(Z.PreservationStats)[-nonpres_index_b]
-
-# get module assign and seperate them
-Gene_all = unique(rownames(networkData_normalized))
-Gene_net = unique(rownames(networkData_50var_nocrt))
-
-
+#
 Module_assign_all = data.frame(Gene = Gene_net,
                                Assign = moduleColors_control)
-
 UnPreserved_Gene_list = list()
 for ( i in seq_along(Mod_Index_NonPre)){
   tmp = as.character(subset(Module_assign_all,Assign == Mod_Index_NonPre[i])$Gene)
   UnPreserved_Gene_list[[i]] = tmp #
   names(UnPreserved_Gene_list)[i]= Mod_Index_NonPre[i]
 }
-
 Preserved_Gene_list = list()
 Mod_Index_Pre = Mod_Index_Pre[-grep('gold',Mod_Index_Pre)]
 for ( i in seq_along(Mod_Index_Pre)){
@@ -221,6 +210,14 @@ for ( i in seq_along(Mod_Index_Pre)){
   Preserved_Gene_list[[i]] = tmp #
   names(Preserved_Gene_list)[i]= Mod_Index_Pre[i]
 }
+
+save(UnPreserved_Gene_list,
+     Preserved_Gene_list,
+     file = 'Gene_list_by_module.rda')
+
+total.genes
+sig.genes
+module.genes
 
 
 
