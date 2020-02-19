@@ -150,7 +150,7 @@ for (i in seq_along(gene_all_2extend)){
   message('Working on ',gene_all_2extend[i])
   Genes_C_count_all_2[i,1] = gene_all_2extend[i]
   Count = AGCTcount(gene_all_2extend[i],genome = genome)
-  Genes_C_count_all_2[i,2] = Count
+  Genes_C_count_all_2[i,2] = as.character(Count)
   print(Count)
 }
 
