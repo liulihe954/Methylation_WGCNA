@@ -72,8 +72,9 @@ library(tidyverse)
 
 # genome pre
 library(biomaRt)
-genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
-# gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_position", "end_position", "chromosome_name"), mart = genome)
+# genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
+# gene = getBM(c("ensembl_gene_id","external_gene_name", "start_position", "end_position", "chromosome_name"), mart = genome)
+# Gene_genome = length(gene$ensembl_gene_id)
 # gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>% 
 #   arrange(ensembl_gene_id) %>% 
 #   dplyr::mutate_at(vars(chromosome_name),add)
@@ -127,22 +128,53 @@ AGCTcount = function(ENS,
   }
 }
 
-Genes_C_count_all = data.frame(Gene = c(),
-                               total = c())
-for (i in seq_along(Gene_all)){
-  message('Working on ',Gene_all[i])
-  Genes_C_count_all[i,1] = Gene_all[i]
-  Count = AGCTcount(Gene_all[i],genome = genome)
-  Genes_C_count_all[i,2] = Count
+biomart="ensembl"
+dataset="btaurus_gene_ensembl"
+Identifier = "external_gene_name"
+attributes = c("ensembl_gene_id")
+database = useMart(biomart)
+genome = useDataset(dataset, mart = database)
+gene = getBM(attributes,mart = genome)
+gene_all_v2 = unique(gene$ensembl_gene_id)
+
+load('Genes_C_count_all_Final.RData')
+gene_all_v1 = unique(Genes_C_count_all$Gene)
+'%!in%' <- function(x,y)!('%in%'(x,y))
+gene_all_2extend = gene_all_v2[gene_all_v2%!in%gene_all_v1]
+
+length(gene_all_2extend)
+
+
+Genes_C_count_all_2 = data.frame(Gene = c(),total = c())
+for (i in seq_along(gene_all_2extend)){
+  message('Working on ',gene_all_2extend[i])
+  Genes_C_count_all_2[i,1] = gene_all_2extend[i]
+  Count = AGCTcount(gene_all_2extend[i],genome = genome)
+  Genes_C_count_all_2[i,2] = Count
   print(Count)
 }
 
-save(Genes_C_count_all,file = 'Genes_C_count_all_2.RData')
+#Genes_C_count_all_single = data.frame(Gene = 'ENSBTAG00000005635',Total_CG = 719)
+Genes_C_count_all_v2 = rbind(Genes_C_count_all,
+                             Genes_C_count_all_v2) %>% arrange(Gene)
 
-load('Genes_C_count_all_2.RData')
-dim(Genes_C_count_all)
-colnames(Genes_C_count_all) = c('Gene', 'Total_CG')
-Genes_C_count_all_single = data.frame(Gene = 'ENSBTAG00000005635',Total_CG = 719)
-Genes_C_count_all = rbind(Genes_C_count_all,Genes_C_count_all_single) %>% arrange(Gene)
+save(Genes_C_count_all_v2,
+     file = 'Genes_C_count_all_Final_v2.RData')
+# 
+# Genes_C_count_all_2 = data.frame(Gene = c(),total = c())
+# for (i in seq_along(gene_all_2extend)){
+#   message('Working on ',gene_all_2extend[i])
+#   Genes_C_count_all_2[i,1] = gene_all_2extend[i]
+#   Count = AGCTcount(gene_all_2extend[i],genome = genome)
+#   Genes_C_count_all_2[i,2] = Count
+#   print(Count)
+# }
 
-save(Genes_C_count_all,file = 'Genes_C_count_all_Final.RData')
+# Genes_C_count_all_single = data.frame(Gene = 'ENSBTAG00000005635',Total_CG = 719)
+# Genes_C_count_all = rbind(Genes_C_count_all,Genes_C_count_all_single) %>% arrange(Gene)
+# 
+# save(Genes_C_count_all,file = 'Genes_C_count_all_Final.RData')
+
+
+
+
