@@ -5,40 +5,17 @@ setwd(data_loci)
 load("methCov08Stat.rda")
 library(tidyverse)
 library(methylKit)
+
+# select Significant Diff Cs
 chr_index = paste(rep('chr',30),c(seq(1,29),'X'),sep = "")
 Diff_C_all = getData(methCov08Stat) %>% 
   mutate_at(vars(chr),as.character) %>% 
   dplyr::filter(chr %in% chr_index)
 
-#Diff_C_all %>% dplyr::filter(start == 303383)
 library(readxl)
-library(tidyverse)
-#DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
-#dim(DiffC2Gene_raw)
-# 
-# mini = min(abs(DiffC2Gene_raw$`Meth Change %`))
-# 
-# test = max(abs(Diff_C_all$meth.diff))
-# 
-# summary(abs(DiffC2Gene_raw$`Meth Change %`))
-# summary(abs(Diff_C_all$meth.diff))
-# 
-# mini/test
-# 
-# 105569 - dim(DiffC2Gene_raw)[1]
-# 
-# dim(DiffC2Gene_raw)[1]
-# 
-# 576  + 151325
-# 
-# table(DiffC2Gene_raw$Position%in%Diff_C_all$start)
-# 
-# table(Diff_C_all$start %in% DiffC2Gene_raw$Position)
 Diff_C_Sig = Diff_C_all %>% 
   dplyr::filter(qvalue <= 0.10) %>% 
   dplyr::filter( abs(meth.diff) >= 20)
-
-#dim(Diff_C_Sig)
 
 Diff_C_Sig_BED = Diff_C_Sig  %>% 
   dplyr::select(chr,start,end)
@@ -52,7 +29,27 @@ setwd(rgmatch_loci)
 write.table(Diff_C_Sig_BED, file='Diff_C_Sig_BED.bed', row.names = F,quote=FALSE, sep='\t')
 setwd(data_loci)
 
-## 
+
+#Count all Cs
+setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/MethEval')
+load('All_Cs.rda')
+chr_index = paste(rep('chr',30),c(seq(1,29),'X'),sep = "")
+SeqC_all = getData(data) %>% 
+  mutate_at(vars(chr),as.character) %>% 
+  dplyr::filter(chr %in% chr_index)
+#
+SeqC_all_BED = SeqC_all %>% 
+  dplyr::select(chr,start,end)
+SeqC_all_BED[,1] = str_replace(SeqC_all_BED[,1],'chr','')
+colnames(SeqC_all_BED) = NULL
+# rgmatch loci
+rgmatch_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch'
+setwd(rgmatch_loci)
+write.table(SeqC_all_BED, file='SeqC_all_BED.bed', row.names = F,quote=FALSE, sep='\t')
+## ================================================================================================================== ##
+#     python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b SeqC_all_BED.bed -r 'exon' -q 4 -o myassociations_all_C.txt    ##
+## ================================================================================================================== ##
+
 
 # 
 # # 

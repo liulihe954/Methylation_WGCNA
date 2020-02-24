@@ -101,6 +101,7 @@ geneTree_treatment = hclust(as.dist(dissTOM_treatment), method="average")
 # save the matrix
 save(adjacency_control,dissTOM_control,geneTree_control,
      adjacency_treatment,dissTOM_treatment,geneTree_treatment,file = "AllMatrix.RData")
+load('AllMatrix.RData')
 print("Step3 - adj matrix created and rdata saved")
 #================================================================ =======================
 #                                 3.  plot trees                                  ######
@@ -198,7 +199,7 @@ print("Step5 - mergeing finished")
 #===============================================================================================
 #                           7. plot cross-condition dendrogram                               ###
 #===============================================================================================
-pdf("Gene_dendrogram_cross_condition.pdf",height=8,width=16)
+pdf("Gene_dendrogram_cross_condition2.pdf",height=8,width=16)
 plotDendroAndColors(geneTree_control, moduleLabels_control, "Modules", dendroLabels=F, hang=0.03, addGuide=TRUE,
                     guideHang=0.05, main="Gene dendrogram and module colors (control)")
 plotDendroAndColors(geneTree_treatment, moduleLabels_control, "Modules", dendroLabels=F,hang=0.03, addGuide=TRUE,

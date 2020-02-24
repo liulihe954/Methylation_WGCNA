@@ -27,9 +27,9 @@ load('network_final.RData')
 #Data_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net'
 setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net')
 #setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch')
-#Associ_out_raw = read.table('myassociations_gene_new.txt',sep = '\t') %>% data.frame()
 Associ_out_raw = read.table('myassoci_exon_5.5k_ext.txt',sep = '\t') %>% data.frame()
 #setwd(Data_loci)
+
 
 ### massage diff C associated gene
 cname =as.character(unlist(Associ_out_raw[1,]));attributes(cname) = NULL
@@ -49,6 +49,7 @@ transpose_df <- function(df) {
     `rownames<-`(NULL)
   return(t_df)
 }
+
 #head(Associ_out,100) %>% print(n = Inf)
 Associ_out =  Associ_out_raw %>% 
   dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
@@ -62,37 +63,42 @@ Associ_out =  Associ_out_raw %>%
 
 Associ_out_count = Associ_out %>% 
   mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
-  mutate(SigG1 = ifelse(Count1 > 30, "Sig", "Not")) %>% 
   mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
-  mutate(SigG2 = ifelse(Count2 > 5, "Sig", "Not"))
-
-DiffC2Gene_sig = Associ_out_count %>% 
-  dplyr::filter(SigG1 == 'Sig' | SigG2 == 'Sig' )
-
-# sig meth gene whole genome
-Gene_DiffC_index = unique(DiffC2Gene_sig$Gene)
 
 # count all Cs using self-wraped function: AGCTcount (getSEQ from biomart mainly)
-load('Genes_C_count_all_Final.RData')
-Genes_C_count_all = Genes_C_count_all %>% 
-  mutate_at(vars(Total_CG),as.numeric) %>% 
-  replace(is.na(.), 0)
 
-dim(Genes_C_count_all)
+# load('Genes_C_count_all_Final_api.RData')
+# head(Genes_C_count_all_api)
+# Genes_C_count_all = Genes_C_count_all_api %>% 
+#   rename(Gene = V1, Total_CG = V2,Prom_CG = V3) %>% 
+#   mutate_at(vars(Total_CG,Prom_CG),as.numeric) %>% 
+#   replace(is.na(.), 0)
+load('Total_C_count_raw.rda')
+dim(Total_C_count_raw)
 
-## calculate proption of diff Cs
+
+# Count1 = 1st_EXON+ GENE_BODY + INTRON
+# Count2 = PROMOTER + TSS + UPSTREAM
+
 "/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
+
 Genes_meth_prop = Genes_C_count_all %>% 
   dplyr::left_join(Associ_out_count, by = c('Gene' = 'Gene')) %>% 
-  dplyr::select(Gene,Total_CG,Count1,Count2) %>% 
+  dplyr::select(Gene,Total_CG,Prom_CG,Count1,Count2) %>% 
   replace(is.na(.), 0) %>% 
   mutate(Count_all = Count1 + Count2) %>% 
-  mutate(Diff_Prop = Count_all/Total_CG)
+  mutate(Diff_Prop_all = Count_all/Total_CG) %>% 
+  mutate(Diff_Prop_body = Count1/(Total_CG - Prom_CG)) %>% 
+  mutate(Diff_Prop_prom = Count2/Prom_CG)
+
+summary(Genes_meth_prop$Diff_Prop_body)
+summary(Genes_meth_prop$Diff_Prop_prom)
+summary(Genes_meth_prop$Diff_Prop_all)
 
 Genes_meth_select = Genes_meth_prop %>% 
   dplyr::filter((Count1 >= 30 | Count2 >=5)) %>% 
-  dplyr::filter(Diff_Prop>=quantile(Diff_Prop,0.5)) %>% 
-  arrange(Diff_Prop)
+  dplyr::filter(Diff_Prop_all>=quantile(Diff_Prop_all,0.5)) %>% 
+  arrange(Diff_Prop_all)
 
 Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
 
@@ -105,13 +111,13 @@ save(Genes_meth_prop,
 # Gather Info: KME and Meth
 load('Genes_meth_prop.rda')
 datKME_tmp = signedKME(datExpr_control, MEs_control)
+'/' <- base:::"/"
 datKME = datKME_tmp %>% 
   dplyr::mutate(Gene = rownames(datKME_tmp)) %>% 
   dplyr::mutate(MdouleAssign = moduleColors_control) %>% 
-  dplyr::left_join(Genes_meth_prop, by= c("Gene" = "Gene")) %>% 
-  dplyr::mutate(Scale_prop = Diff_Prop/max(Diff_Prop)) #%>%
+  dplyr::left_join(Genes_meth_prop, by= c("Gene" = "Gene"))
+
 head(datKME)
-summary(datKME$Scale_prop)
 
 ######=========================##########
 ##            Index Pre                ##
@@ -130,33 +136,83 @@ Mod_Index_Pre = Mod_Index_Pre[-grep('gold',Mod_Index_Pre)]
 ##        diff C prop vs M.M           ##
 ######=========================##########
 #
-pdf('PDF_Results_NonP2.pdf')
+
+names(datKME)
+
+plot(test)
+test = scale(data_tmp$Scale_prop_all)
+summary(test)
+names(datKME)
+
+#i = 3
+pdf('PDF_Results_NonP.pdf')
 for (i in seq_along(Mod_Index_NonPre)){
   text = Mod_Index_NonPre[i]
   sub = paste('kME',text,sep = '')
-  data_tmp = subset(datKME, MdouleAssign == text)
-  print(ggplot(data_tmp,aes(x=get(sub),y = Scale_prop)) + 
-    geom_point(colour="grey") +
-    geom_point(data = data_tmp, 
-               aes(x=get(sub),y = Scale_prop),colour="red", size=1)+
+  # subset input data
+  data_tmp = subset(datKME,MdouleAssign == text) %>% 
+    dplyr::mutate(Scale_KME = scale(get(sub))) %>%
+    dplyr::mutate(Scale_prop_all = scale(Diff_Prop_all)) %>% 
+    dplyr::mutate(Scale_prop_prmt = scale(Diff_Prop_prom)) %>% 
+    dplyr::mutate(Scale_prop_body = scale(Diff_Prop_body)) %>% 
+    # dplyr::mutate(Scale_prop_all = Diff_Prop_all/max(Diff_Prop_all)) %>% 
+    # dplyr::mutate(Scale_prop_prmt = Diff_Prop_prom/max(Diff_Prop_prom)) %>% 
+    # dplyr::mutate(Scale_prop_body = Diff_Prop_body/max(Diff_Prop_body)) %>% 
+    dplyr::select(Gene,Scale_KME,Scale_prop_all,Scale_prop_prmt,Scale_prop_body)
+  # pivot rotate
+  data_module = data_tmp %>%
+    pivot_longer(cols = c(Scale_prop_all,Scale_prop_prmt,Scale_prop_body),
+                 names_to = "Cat", values_to = "Prop")
+  print(
+    ggplot(data_module, aes(x = Scale_KME ,y = Prop, colour = Cat)) + # y = Scale_prop
+    geom_point() + 
+    geom_jitter(width = 0.0001, height = 0.0001,alpha = 1) + 
+    geom_smooth(method=lm)+
     ggtitle(paste("Methylation VS ModuleMembership",text,sep='-')) +
-    xlab("InModule_Con") + ylab("MethC_Prop")+
-    theme(plot.title = element_text(hjust = 0.5)))
-} 
+    xlab("InModule_Con") + ylab("MethC_Prop") +
+    guides(color=guide_legend(title="Genomic Regions")) +
+    scale_color_manual(labels = c("All","Upper","Body"),
+                       values = c("Green","blue", "turquoise"))+
+    theme(legend.key = element_rect(fill = "transparent", colour = "transparent"),
+          #legend.key = element_rect(colour = 'black', fill = 'blank', size = 0.5, linetype='dashed'),
+          legend.position='top', 
+          plot.title = element_text(hjust = 0.5)))
+}
 dev.off()
 
 
-pdf('PDF_Results_PreS.pdf')
+pdf('PDF_Results_Pre.pdf')
 for (i in seq_along(Mod_Index_Pre)){
   text = Mod_Index_Pre[i]
   sub = paste('kME',text,sep = '')
-  print(ggplot(datKME,aes(x=get(sub),y = Scale_prop)) + 
-          geom_point(colour="grey") +
-          geom_point(data = subset(datKME, MdouleAssign == text), 
-                     aes(x=get(sub),y = Scale_prop),colour="red", size=1)+
-          ggtitle(paste("Methylation VS ModuleMembership",text,sep='-')) +
-          xlab("InModule_Con") + ylab("MethC_Prop")+
-          theme(plot.title = element_text(hjust = 0.5)))
+  # subset input data
+  data_tmp = subset(datKME,MdouleAssign == text) %>% 
+    dplyr::mutate(Scale_KME = scale(get(sub))) %>%
+    dplyr::mutate(Scale_prop_all = scale(Diff_Prop_all)) %>% 
+    dplyr::mutate(Scale_prop_prmt = scale(Diff_Prop_prom)) %>% 
+    dplyr::mutate(Scale_prop_body = scale(Diff_Prop_body)) %>% 
+    # dplyr::mutate(Scale_prop_all = Diff_Prop_all/max(Diff_Prop_all)) %>% 
+    # dplyr::mutate(Scale_prop_prmt = Diff_Prop_prom/max(Diff_Prop_prom)) %>% 
+    # dplyr::mutate(Scale_prop_body = Diff_Prop_body/max(Diff_Prop_body)) %>% 
+    dplyr::select(Gene,Scale_KME,Scale_prop_all,Scale_prop_prmt,Scale_prop_body)
+  # pivot rotate
+  data_module = data_tmp %>%
+    pivot_longer(cols = c(Scale_prop_all,Scale_prop_prmt,Scale_prop_body),
+                 names_to = "Cat", values_to = "Prop")
+  print(
+    ggplot(data_module, aes(x = Scale_KME ,y = Prop, colour = Cat)) + # y = Scale_prop
+      geom_point() + 
+      geom_jitter(width = 0.0001, height = 0.0001,alpha = 1) + 
+      geom_smooth(method=lm)+
+      ggtitle(paste("Methylation VS ModuleMembership",text,sep='-')) +
+      xlab("InModule_Con") + ylab("MethC_Prop") +
+      guides(color=guide_legend(title="Genomic Regions")) +
+      scale_color_manual(labels = c("All","Upper","Body"),
+                         values = c("Green","blue", "turquoise"))+
+      theme(legend.key = element_rect(fill = "transparent", colour = "transparent"),
+            #legend.key = element_rect(colour = 'black', fill = 'blank', size = 0.5, linetype='dashed'),
+            legend.position='top', 
+            plot.title = element_text(hjust = 0.5)))
 }
 dev.off()
 
@@ -180,21 +236,82 @@ setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 
 # gene index pre
 Genes_meth_select = Genes_meth_prop %>% 
-  dplyr::filter((Count1 >= 30 | Count2 >= 5)) %>% 
-  dplyr::filter(Diff_Prop>=quantile(Diff_Prop,0.5)) %>% 
-  arrange(Diff_Prop)
+  dplyr::filter((Count1 >= 30 | Count2 >=5)) %>% 
+  #dplyr::filter(Diff_Prop_all>=quantile(Diff_Prop_all,0.4)) %>% 
+  arrange(Diff_Prop_all)
 
 Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
 
-#
-Gene_all = unique(rownames(networkData_normalized))
-Gene_net = unique(rownames(networkData_50var_nocrt))
+length(Diff_Meth_Gene_index)
+
+# Analysis and display of module preservation results
+load("modulePreservation_methionine.RData")
+# test = mp$preservation$Z$ref.control
+# stats = mp$preservation$Z$ref.control$inColumnsAlsoPresentIn.treatment
+# Results_mp = stats[order(-stats[,2]),c(1:2)]
+# head(stats)
+# head(Results_mp)
 
 ## get module index
-ref=1; test = 2;Z.PreservationStats=mp$preservation$Z[[ref]][[test]];Zsummary=Z.PreservationStats$Zsummary.pres;nonpres_index_b = (which(Zsummary < 2));nonpres_modulenames_b = rownames(Z.PreservationStats)[nonpres_index_b]
+ref=1; test = 2;
+Z.PreservationStats=mp$preservation$Z[[ref]][[test]];
+Zsummary=Z.PreservationStats$Zsummary.pres;nonpres_index_b = (which(Zsummary < 2));
+nonpres_modulenames_b = rownames(Z.PreservationStats)[nonpres_index_b]
+#
+statsObs = cbind(mp$quality$observed[[ref]][[test]][, -1], mp$preservation$observed[[ref]][[test]][, -1])
+statsZ = cbind(mp$quality$Z[[ref]][[test]][, -1], mp$preservation$Z[[ref]][[test]][, -1]);
+#
+MP_Stats_medianRank = 
+  cbind(statsObs[, c("medianRank.pres", "medianRank.qual")],signif(statsZ[, c("Zsummary.pres", "Zsummary.qual")], 2)) %>% 
+  dplyr::select(medianRank.pres)
+MP_Stats_tmp = mp$preservation$Z[[ref]][[test]] 
+MP_Stats = merge(MP_Stats_tmp,MP_Stats_medianRank,by="row.names",all.x=TRUE)
+MP_Stats_final = MP_Stats[,c(1,2,ncol(MP_Stats),3:(ncol(MP_Stats)-1))] %>% 
+  dplyr::filter(!(Row.names %in% c('gold','grey')))
+MP_Stats_final[6,2] = 3440
+MP_Stats_final
+
+
+# coral1 3440
+# 
+#devtools::install_github("slowkow/ggrepel")
+library(ggrepel)
+set.seed(415)
+names(MP_Stats_final)
+out = MP_Stats_final[,1:4]
+write.csv(out,file = 'MP_Results_Out.csv')
+# median rank
+MP_Stats_nobig = MP_Stats_final %>% dplyr::filter(!(Row.names %in% c('coral1')))
+
+# 
+ggplot(MP_Stats_nobig, aes(moduleSize,medianRank.pres,label = Row.names)) +
+  geom_point(size = 5,aes(colour = Row.names))+
+  geom_text_repel(vjust = -2)+
+  ggtitle("Preservation Median Rank") +
+  xlab("ModuleSize") + ylab("Preservation Median Rank") +
+  theme(plot.title = element_text(hjust = 0.5,size=16, face="bold.italic"),
+        axis.title.x = element_text(size=14, face="bold"),
+        axis.title.y = element_text(size=14, face="bold"))
+
+# Preservation Z summary
+ggplot(MP_Stats_nobig, aes(moduleSize,Zsummary.pres,label = Row.names)) +
+  geom_point(size = 5,aes(colour = Row.names))+
+  geom_text_repel(vjust = -2)+
+  ggtitle("Preservation Zsummary") +
+  xlab("ModuleSize") + ylab("Zsummary") +
+  theme(plot.title = element_text(hjust = 0.5,size=16, face="bold.italic"),
+        axis.title.x = element_text(size=14, face="bold"),
+        axis.title.y = element_text(size=14, face="bold"))+
+  geom_abline(intercept = 0,slope=0,colour="black",linetype="dashed")+
+  geom_abline(intercept = 2,slope=0,colour="blue",linetype="dashed")+
+  geom_abline(intercept = 10,slope=0,colour="darkgreen",linetype="dashed")
+
+# 
+
 Mod_Index_NonPre  = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
 Mod_Index_Pre = rownames(Z.PreservationStats)[-nonpres_index_b]
-#
+
+# massage gene list
 Module_assign_all = data.frame(Gene = Gene_net,
                                Assign = moduleColors_control)
 UnPreserved_Gene_list = list()
@@ -210,113 +327,228 @@ for ( i in seq_along(Mod_Index_Pre)){
   Preserved_Gene_list[[i]] = tmp #
   names(Preserved_Gene_list)[i]= Mod_Index_Pre[i]
 }
-
+#
 save(UnPreserved_Gene_list,
      Preserved_Gene_list,
      file = 'Gene_list_by_module.rda')
 
-total.genes
-sig.genes
-module.genes
+
+for (i in 1:13){
+  tmp = (Gene_list_all[[i]])
+  len = length(tmp)
+  m = m + len
+  test = table(Diff_Meth_Gene_index %in% tmp)
+  print(test)
+}
+
+147
+7 + 80 + 25 + 1 + 15 + 19
+
+6505 + length(Gene_grey)
+
+##
+load('Gene_list_by_module.rda')
 
 
+names(Preserved_Gene_list)
+# genes captured in all category
+Gene_all = unique(rownames(networkData_normalized))
+Gene_net = unique(rownames(networkData_50var_nocrt))
+Gene_grey = datKME %>% 
+  dplyr::filter(MdouleAssign == 'grey') %>% 
+  dplyr::select(Gene) %>% 
+  unlist(use.names = F)
 
-InterPro_Enrich = function(total_genes_all,
-                           sig_genes_all,
-                           TestingSubsetNames,
-                           IPthres = 0.05,
-                           biomart="ensembl",
-                           dataset="btaurus_gene_ensembl",
-                           Identifier = "external_gene_name",
-                           attributes = c("ensembl_gene_id","external_gene_name","interpro","interpro_description"),
-                           keyword = "Interpro_Enrichment"){
-  total_enrich = 0
-  raw_pvalue_all = numeric()
-  Interpro_results_b = list()
-  Interpro_results_b_raw = list()
-  DB_List = list()
-  library(ggplot2);library(biomaRt);library(gage);library(magrittr);library(tidyverse)# load pkg
-  for (i in c(1:(length(TestingSubsetNames)))){
-    message("working on dataset #",i," - ",TestingSubsetNames[i])
-    
-    
-    sig.genes = unlist(sig_genes_all[i]);attributes(sig.genes) = NULL
-    total.genes = unlist(total_genes_all[i]);attributes(total.genes) = NULL
-    # total genes in the non-preserved module
-    N = length(total.genes[total.genes %in% genesInterpro])
-    S = length(sig.genes[sig.genes %in% genesInterpro]) #
-    ExternalLoss_total = paste((length(total.genes) - N),round((length(total.genes) - N)/N,3),sep = "/")
-    ExternalLoss_sig = paste((length(sig.genes) - S),round((length(sig.genes) - S)/S,3),sep = "/")
-    out = data.frame(Interpro=character(),
-                     Name=character(),
-                     totalG=numeric(),
-                     sigG=numeric(),
-                     Pvalue=numeric(),
-                     ExternalLoss_total = character(),
-                     ExternalLoss_sig = character(),
-                     findG =  character())
-    message("Module size of ",TestingSubsetNames[i],": ", length(sig.genes))
-    for(j in 1:length(Interpro)){
-      if (j%%100 == 0) {message("tryingd on Interpro ",j," - ",Interpro[j]," - ",Name[j])}
-      gENEs = DB_List[[j]]
-      m = length(total.genes[total.genes %in% gENEs]) # genes from target interpro and in our dataset
-      findG = sig.genes[sig.genes %in% gENEs]
-      s = length(findG) # # genes from target interpro also in the non-preserved module
-      PastefindG = paste(findG, collapse="/")
-      M = matrix(c(s,S-s,m-s,N-m-S+s),byrow = 2, nrow = 2)
-      Pval = round(fisher.test(M, alternative ="g")$p.value,100)
-      tmp = data.frame(Interpro = Interpro[j], 
-                       Name = Name[j], 
-                       totalG = m, 
-                       sigG = s, 
-                       Pvalue = Pval, 
-                       ExternalLoss_total = ExternalLoss_total,
-                       ExternalLoss_sig = ExternalLoss_sig,
-                       findG = PastefindG)
-      out = rbind(out,tmp)}
-    # put all palues in a box
-    raw_pvalue_all = append(raw_pvalue_all,out$Pvalue,length(raw_pvalue_all))
-    # raw complilation starts
-    final_raw = out[order(out$Pvalue),];colnames(final_raw) = c("InterproID","Interpro_Name", "Total_Genes", "Significant_Genes", "pvalue_r","ExternalLoss_total","InternalLoss_sig","findG")
-    final_raw = final_raw %>% dplyr::mutate(hitsPerc = Significant_Genes*100 / Total_Genes)
-    Interpro_results_b_raw[[i]] = final_raw; names(Interpro_results_b_raw)[i] = paste(TestingSubsetNames[i],"with",dim(final_raw)[1],"enriched Interpro raw")
-    # raw complilation ends
-    # selection starts - select those has 4 more gene in common and pvalue smaller than 0.05
-    ot = subset(out,totalG > 4 & Pvalue <= IPthres)
-    final = ot[order(ot$Pvalue),];colnames(final) = c("InterproID","Interpro_Name", "Total_Genes", "Significant_Genes", "pvalue_r","ExternalLoss_total","InternalLoss_sig","findG")
-    final = final %>% mutate(hitsPerc = (Significant_Genes*100)/Total_Genes)
-    Interpro_results_b[[i]] = final;names(Interpro_results_b)[i] = paste(TestingSubsetNames[i],"with",dim(final)[1],"enriched Interpro")
-    # selection ends
-    message("Significant Enrichment Hits:",nrow(final))
-    total_enrich = total_enrich + nrow(final)
-      }
-  raw_pvalue_index = seq(0.05,1,by=0.05)
-  raw_pvalue_sum = numeric()
-  for( z in seq_along(raw_pvalue_index)){raw_pvalue_sum[z] = length(which(raw_pvalue_all <= raw_pvalue_index[z]))}
-  raw_pvalue_distribution = data.frame(index = raw_pvalue_index,counts_Interpro = raw_pvalue_sum)
-  #raw_pvalue_distribution
-  save(Interpro_results_b, Interpro_results_b_raw, raw_pvalue_distribution, file = paste(trimws(keyword),".RData",sep = ""))
-  message(total_enrich," significant Interpro domains found within ",
-          length(TestingSubsetNames)," modules/subsets", 
-          " at the significance level of ",IPthres)
-  message("Nice! - Interpro enrichment finished and data saved")}
+table(Diff_Meth_Gene_index %in% Gene_all)
+table(Diff_Meth_Gene_index %in% Gene_net)
+table(Diff_Meth_Gene_index %in% Gene_grey)
+#
+Module_Overrep= data.frame(ModuleName = c(),
+                            PreservationStatus = c(),
+                            #ModuleSize = c(),
+                            No.Overlap = c(),
+                            Pvalue = c())
+names(datKME)
+table(datKME$MdouleAssign)
+
+Gene_list_all = append(Preserved_Gene_list, UnPreserved_Gene_list)
+all_module_name = names(Gene_list_all)
+for (i in seq_along(all_module)){
+  tmp_md = all_module_name[i]
+  Module_Overrep[i,1] =  tmp_md
+  Module_Overrep[i,2] = ifelse(tmp_md %in% Mod_Index_NonPre, 'Sig','Not')
+  
+  total.genes =  Gene_all
+  sig.genes = Diff_Meth_Gene_index
+  gENEs = unlist(Preserved_Gene_list[i]);attributes(module.genes) = NULL
+  N = length(total.genes)
+  S = length(sig.genes) 
+  m = length(total.genes[total.genes %in% gENEs]) # genes from target interpro and in our dataset
+  findG = sig.genes[sig.genes %in% gENEs]
+  s = length(findG) # # genes from target interpro also in the non-preserved module
+  PastefindG = paste(findG, collapse="/")
+  M = matrix(c(s,S-s,m-s,N-m-S+s),byrow = 2, nrow = 2)
+  Pval = round(fisher.test(M, alternative ="g")$p.value,100)
+  Module_Overrep[i,3] = s
+  Module_Overrep[i,4] = Pval
+}
 
 
 ######=========================##########
-##        Myth_extent porp            ##
+##        Plot Enrichment Results     ##
 ######========================##########
 # gene pre
 setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 library(readxl)
 library(tidyverse)
-# DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
-# DiffC2Gene.extend = DiffC2Gene_raw %>% 
-#   dplyr::filter(Gene != '-')
-head(DiffC2Gene.extend)
-# genome pre
-genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
-gene = getBM(c("ensembl_gene_id","external_gene_name","description", "start_position", "end_position", "chromosome_name"), mart = genome)
-gene_pos_info_bta = dplyr::select(gene,ensembl_gene_id,start_position,end_position,chromosome_name) %>% 
-  arrange(ensembl_gene_id) %>% 
-  dplyr::mutate_at(vars(chromosome_name),add)
+#
+load('MESH_Enrichment_0115.RData')
+Mesh_results = Parse_Results(Mesh_results_b) %>% 
+  dplyr::select(-findG)
+
+ExampleID_Mesh = c("D012269","D025261","D046988")
+Mesh_Select = Mesh_results %>% 
+  dplyr::filter(MeshID %in% ExampleID_Mesh)
+  
+# D012269 D025261 D046988
+
+#
+load('Interpro_Enrichment_0113.RData')
+Interpro_results = Parse_Results(Interpro_results_b)%>% 
+  dplyr::select(-findG)
+
+ExampleID_Interpro = c("IPR001353","IPR023333","IPR014722")
+Interpro_Select = Interpro_results %>% 
+  dplyr::filter(InterproID %in% ExampleID_Interpro)
+# IPR001353 IPR023333 IPR014722
+names(Interpro_results)
+
+# 
+load('Kegg_Enrichment_0113.RData')
+Kegg_results = Parse_Results(KEGG_results_b)%>% 
+  dplyr::select(-findG)
+
+ExampleID_kegg = c("bta03010","bta03050")
+Kegg_Select = Kegg_results %>% 
+  dplyr::filter(KEGGID %in% ExampleID_kegg)
+
+# bta03010 bta03050
+
+#
+load('Reactome_Enrich_all_path_0113.RData')
+Reactome_results = Parse_Results(Reactome_results_b)%>% 
+  dplyr::select(-findG)
+
+ExampleID_Reactome = c("R-BTA-72706","R-BTA-72702")
+Reactome_Select = Reactome_results %>% 
+  dplyr::filter(ReactomeID %in% ExampleID_Reactome)
+
+# R-BTA-72706 R-BTA-72702
+
+# 
+load('Msig_Enrichment_0124.RData')
+Msig_results = Parse_Results(Results_b)%>% 
+  dplyr::select(-findG)
+names(Msig_results)
+
+ExampleID_Msig = c("M10085","M17748")
+Msig_Select = Msig_results %>% 
+  dplyr::filter(MsigID %in% ExampleID_Msig)
+# M10085 M17748 
+
+
+AllID = c(as.character(Reactome_Select[,1]),
+          as.character(Msig_Select[,1]),
+          as.character(Interpro_Select[,1]),
+          as.character(Kegg_Select[,1]),
+          as.character(Mesh_Select[,1]))
+          
+AllPerc = c(as.numeric(Reactome_Select[,8]),
+            as.numeric(Msig_Select[,8]),
+            as.numeric(Interpro_Select[,8]),
+            as.numeric(Kegg_Select[,8]),
+            as.numeric(Mesh_Select[,8]))
+
+AllP = c(as.character(Reactome_Select[,5]),
+          as.character(Msig_Select[,5]),
+          as.character(Interpro_Select[,5]),
+          as.character(Kegg_Select[,5]),
+          as.character(Mesh_Select[,5]))
+
+AllCount = c(as.character(Reactome_Select[,4]),
+          as.character(Msig_Select[,4]),
+          as.character(Interpro_Select[,4]),
+          as.character(Kegg_Select[,4]),
+          as.character(Mesh_Select[,4]))
+
+AllDef = c(as.character(Reactome_Select[,2]),
+             as.character(Msig_Select[,2]),
+             as.character(Interpro_Select[,2]),
+             as.character(Kegg_Select[,2]),
+             as.character(Mesh_Select[,2]))
+AllDef[3] = 'Release of a polypeptide chain from the ribosome in a mitochondrion'
+
+AllCate = c(rep('Reactome',2),
+            rep('Msig',2),
+            rep('Interpro',3),
+            rep('Kegg',2),
+            rep('Mesh',3))
+
+final = data.frame(cbind(AllID,
+                         AllPerc,
+                         AllP,
+                         AllCount,
+                         AllCate,
+                         AllDef))
+final[,2] = as.numeric(as.character(final[,2]))
+final[,3] = formatC(as.numeric(as.character(final[,3])),format = "e", digits = 2)
+final[,4] = as.numeric(as.character(final[,4]))
+final[,6] = as.character(final[,6])
+final = final %>% mutate(AllDef_plot = paste(AllDef,AllP,sep = ' - ')) %>% 
+  dplyr::rename(DataBase = AllCate, Count =  AllCount)
+
+
+library(ggrepel)
+set.seed(415)
+pdf('EnrichOut.pdf')
+print(ggplot(final, aes(x = AllPerc,
+                  y = AllID,
+                  colour = DataBase,
+                  size = Count)) +
+  geom_point()+
+  #geom_text_repel(size = 8)+
+  geom_label_repel(data = final[-c(1:2,11),],
+                   show.legend = F,
+                   size = 3.2,
+                   direction = "y",
+                   vjust = 0,
+                   hjust = - 0.3,
+                   aes(label = AllDef_plot))+
+  geom_label_repel(data = final[1:2,],
+                   #nudge_x = 2,
+                   show.legend = F,
+                   size = 3.5,
+                   direction = "y",
+                   hjust = 1.2,
+                   vjust = -0.2,
+                   aes(label = AllDef_plot))+
+  geom_label_repel(data = final[11,],
+                   #nudge_x = 2,
+                   show.legend = F,
+                   size = 3.5,
+                   direction = "y",
+                   hjust = 1.1,
+                   vjust = 0,
+                   aes(label = AllDef_plot))+
+  ggtitle("Overrepresentation in Module antiquewhite2") +
+  xlab("Hit Percentage") + 
+  ylab("Biological Pathway ID") +
+  theme_gray()+
+  theme(plot.title = element_text(hjust = 0.5,size=16, face="bold.italic"),
+        axis.title.x = element_text(size=14, face="bold"),
+        axis.title.y = element_text(size=14, face="bold")))
+dev.off()
+
+
+
 

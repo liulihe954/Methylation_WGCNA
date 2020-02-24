@@ -174,4 +174,5 @@ for (i in seq_along(gene_all_v2)){
 save(Genes_C_count_all_api,
      file = 'Genes_C_count_all_Final_api.RData')
 
+# load("Genes_C_count_all_Final_api.RData")
 
