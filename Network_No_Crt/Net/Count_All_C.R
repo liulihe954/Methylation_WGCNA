@@ -175,4 +175,63 @@ save(Genes_C_count_all_api,
      file = 'Genes_C_count_all_Final_api.RData')
 
 # load("Genes_C_count_all_Final_api.RData")
+library(readxl)
+test = read_xlsx('DiffC_Gene.xlsx')
+test2 = test %>% dplyr::filter(Gene != "-") #%>% dplyr::filter(Region != 'DOWNSTREAM')
+
+Associ_out2 =  test2 %>% 
+  #dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
+  group_by(Gene) %>% 
+  dplyr::count(Region) %>%
+  tidyr::spread(key = Gene, value = n) %>% 
+  transpose_df() %>% 
+  replace(is.na(.), 0) %>% 
+  mutate_at(vars(-Region), as.numeric) %>% 
+  dplyr::rename(Gene = Region)
+
+Associ_out_count2 = Associ_out2 %>% 
+  mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
+  mutate(Count2 = PROMOTER + TSS + UPSTREAM)
+
+plot(Associ_out_count2$Count1)
+
+
+load('Total_C_count_raw.rda')
+Total_C_count = Total_C_count_raw %>% 
+  mutate(Count1_all = `1st_EXON`+ GENE_BODY + INTRON) %>% 
+  mutate(Count2_all = PROMOTER + TSS + UPSTREAM)
+Total_C_count_2join = Total_C_count %>% 
+  dplyr::select(Gene,Count1_all,Count2_all)
+
+"/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
+Associ_out_count_final2 = Associ_out_count2 %>% 
+  dplyr::left_join(Total_C_count_2join,by = c('Gene'= 'Gene')) %>% 
+  dplyr::select(Gene,Count1,Count2,Count1_all,Count2_all) %>% 
+  mutate(Prop_Body = Count1/Count1_all) %>% 
+  mutate(Prop_Prpt = Count2/Count2_all) %>% 
+  mutate(Prop_All = (Count1+Count2)/(Count1_all+Count2_all))
+
+
+# Count1 = 1st_EXON+ GENE_BODY + INTRON
+# Count2 = PROMOTER + TSS + UPSTREAM
+Genes_meth_prop2 = Associ_out_count_final2
+
+Genes_meth_select2 = Genes_meth_prop2 %>% 
+  dplyr::filter((Count1 >= 30 | Count2 >= 5)) %>% 
+  #dplyr::filter(Prop_All>=quantile(Prop_All,0.5)) %>% 
+  #dplyr::filter(Prop_All >= 0.1) %>% 
+  arrange(Prop_All)
+
+length(which )
+
+summary(sort(Genes_meth_prop2$Prop_Body,decreasing = T))
+
+summary(sort(Genes_meth_prop$Prop_Body,decreasing = T))
+
+table(Genes_meth_prop$Prop_Prpt)
+length(which(Genes_meth_prop$Prop_Prpt >= .1))
+summary(Genes_meth_prop2$Prop_All)
+Diff_Meth_Gene_index2 = unique(Genes_meth_select2$Gene)
+length(Diff_Meth_Gene_index2)
+
 

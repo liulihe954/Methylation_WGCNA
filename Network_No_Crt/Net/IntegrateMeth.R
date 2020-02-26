@@ -27,14 +27,18 @@ load('network_final.RData')
 #Data_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net'
 setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net')
 #setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch')
-Associ_out_raw = read.table('myassoci_exon_5.5k_ext.txt',sep = '\t') %>% data.frame()
+# Associ_out_raw = read.table('myassoci_exon_5.5k_ext.txt',sep = '\t') %>% data.frame()
+library(readxl)
+Associ_out_raw = read_xlsx('DiffC_Gene.xlsx') %>% dplyr::filter(Gene != "-") %>% 
+  rename(Area=Region)
+#%>% dplyr::filter(Region != 'DOWNSTREAM')
 #setwd(Data_loci)
 
-
 ### massage diff C associated gene
-cname =as.character(unlist(Associ_out_raw[1,]));attributes(cname) = NULL
-colnames(Associ_out_raw) = cname
-Associ_out_raw= Associ_out_raw[-1,]
+# cname =as.character(unlist(Associ_out_raw[1,]));attributes(cname) = NULL
+# colnames(Associ_out_raw) = cname
+# Associ_out_raw = Associ_out_raw[-1,]
+
 ####
 # custom function to transpose while preserving names
 transpose_df <- function(df) {
@@ -49,10 +53,9 @@ transpose_df <- function(df) {
     `rownames<-`(NULL)
   return(t_df)
 }
-
 #head(Associ_out,100) %>% print(n = Inf)
 Associ_out =  Associ_out_raw %>% 
-  dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
+  #dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
   group_by(Gene) %>% 
   dplyr::count(Area) %>%
   tidyr::spread(key = Gene, value = n) %>% 
@@ -63,9 +66,11 @@ Associ_out =  Associ_out_raw %>%
 
 Associ_out_count = Associ_out %>% 
   mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
-  mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
+  mutate(Count2 = PROMOTER + TSS + UPSTREAM)
+
 
 # count all Cs using self-wraped function: AGCTcount (getSEQ from biomart mainly)
+
 
 # load('Genes_C_count_all_Final_api.RData')
 # head(Genes_C_count_all_api)
@@ -73,34 +78,47 @@ Associ_out_count = Associ_out %>%
 #   rename(Gene = V1, Total_CG = V2,Prom_CG = V3) %>% 
 #   mutate_at(vars(Total_CG,Prom_CG),as.numeric) %>% 
 #   replace(is.na(.), 0)
+
 load('Total_C_count_raw.rda')
-dim(Total_C_count_raw)
+Total_C_count = Total_C_count_raw %>% 
+  mutate(Count1_all = `1st_EXON`+ GENE_BODY + INTRON) %>% 
+  mutate(Count2_all = PROMOTER + TSS + UPSTREAM)
+Total_C_count_2join = Total_C_count %>% 
+  dplyr::select(Gene,Count1_all,Count2_all)
+
+"/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
+Associ_out_count_final = Associ_out_count %>% 
+  dplyr::left_join(Total_C_count_2join,by = c('Gene'= 'Gene')) %>% 
+  dplyr::select(Gene,Count1,Count2,Count1_all,Count2_all) %>% 
+  mutate(Prop_Body = Count1/Count1_all) %>% 
+  mutate(Prop_Prpt = Count2/Count2_all) %>% 
+  mutate(Prop_All = (Count1+Count2)/(Count1_all+Count2_all))
 
 
 # Count1 = 1st_EXON+ GENE_BODY + INTRON
 # Count2 = PROMOTER + TSS + UPSTREAM
+Genes_meth_prop = Associ_out_count_final %>% 
+  dplyr::filter(!is.na(Prop_Body) & Prop_Body <=1) %>% 
+  dplyr::filter(!is.na(Prop_Prpt) & Prop_Prpt <=1) %>% 
+  dplyr::filter(!is.na(Prop_All) & Prop_All <=1)
 
-"/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
-
-Genes_meth_prop = Genes_C_count_all %>% 
-  dplyr::left_join(Associ_out_count, by = c('Gene' = 'Gene')) %>% 
-  dplyr::select(Gene,Total_CG,Prom_CG,Count1,Count2) %>% 
-  replace(is.na(.), 0) %>% 
-  mutate(Count_all = Count1 + Count2) %>% 
-  mutate(Diff_Prop_all = Count_all/Total_CG) %>% 
-  mutate(Diff_Prop_body = Count1/(Total_CG - Prom_CG)) %>% 
-  mutate(Diff_Prop_prom = Count2/Prom_CG)
-
-summary(Genes_meth_prop$Diff_Prop_body)
-summary(Genes_meth_prop$Diff_Prop_prom)
-summary(Genes_meth_prop$Diff_Prop_all)
+sort(Genes_meth_prop$Prop_Prpt,decreasing = T)
 
 Genes_meth_select = Genes_meth_prop %>% 
-  dplyr::filter((Count1 >= 30 | Count2 >=5)) %>% 
-  dplyr::filter(Diff_Prop_all>=quantile(Diff_Prop_all,0.5)) %>% 
-  arrange(Diff_Prop_all)
+  dplyr::filter((Count1 >= 20 | Count2 >= 3)) %>% 
+  # dplyr::filter(Prop_All>= 0.05) %>%
+  # dplyr::filter(Prop_Prpt>= 0.05) %>%
+  # dplyr::filter(Prop_Body>= 0.05) %>%
+  dplyr::filter(Prop_Prpt >= quantile(Prop_Prpt,0.2)) %>%
+  dplyr::filter(Prop_All >= quantile(Prop_All,0.2)) %>%
+  dplyr::filter(Prop_Body >= quantile(Prop_Body,0.2)) %>%
+  dplyr::filter(Prop_Prpt != 0) %>%
+  dplyr::filter(Prop_All != 0) %>%
+  dplyr::filter(Prop_Body != 0) %>%
+  arrange(Prop_All)
 
 Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
+length(Diff_Meth_Gene_index)
 
 #save(Genes_meth_prop,file = 'Genes_meth_prop.txt')
 save(Genes_meth_prop,
@@ -117,7 +135,6 @@ datKME = datKME_tmp %>%
   dplyr::mutate(MdouleAssign = moduleColors_control) %>% 
   dplyr::left_join(Genes_meth_prop, by= c("Gene" = "Gene"))
 
-head(datKME)
 
 ######=========================##########
 ##            Index Pre                ##
@@ -235,13 +252,7 @@ setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 # Diff_Meth_Gene_index[which(Diff_Meth_Gene_index%in%test)]
 
 # gene index pre
-Genes_meth_select = Genes_meth_prop %>% 
-  dplyr::filter((Count1 >= 30 | Count2 >=5)) %>% 
-  #dplyr::filter(Diff_Prop_all>=quantile(Diff_Prop_all,0.4)) %>% 
-  arrange(Diff_Prop_all)
-
 Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
-
 length(Diff_Meth_Gene_index)
 
 # Analysis and display of module preservation results
@@ -332,28 +343,14 @@ save(UnPreserved_Gene_list,
      Preserved_Gene_list,
      file = 'Gene_list_by_module.rda')
 
-
-for (i in 1:13){
-  tmp = (Gene_list_all[[i]])
-  len = length(tmp)
-  m = m + len
-  test = table(Diff_Meth_Gene_index %in% tmp)
-  print(test)
-}
-
-147
-7 + 80 + 25 + 1 + 15 + 19
-
-6505 + length(Gene_grey)
-
 ##
 load('Gene_list_by_module.rda')
-
 
 names(Preserved_Gene_list)
 # genes captured in all category
 Gene_all = unique(rownames(networkData_normalized))
 Gene_net = unique(rownames(networkData_50var_nocrt))
+
 Gene_grey = datKME %>% 
   dplyr::filter(MdouleAssign == 'grey') %>% 
   dplyr::select(Gene) %>% 
@@ -362,25 +359,26 @@ Gene_grey = datKME %>%
 table(Diff_Meth_Gene_index %in% Gene_all)
 table(Diff_Meth_Gene_index %in% Gene_net)
 table(Diff_Meth_Gene_index %in% Gene_grey)
+
 #
 Module_Overrep= data.frame(ModuleName = c(),
                             PreservationStatus = c(),
                             #ModuleSize = c(),
                             No.Overlap = c(),
                             Pvalue = c())
-names(datKME)
-table(datKME$MdouleAssign)
+Gene_list_all = append(Preserved_Gene_list,UnPreserved_Gene_list)
+Grey = list(Grey = Gene_grey)
+Gene_list_all = append(Gene_list_all,Grey)
+length(Gene_list_all)
 
-Gene_list_all = append(Preserved_Gene_list, UnPreserved_Gene_list)
-all_module_name = names(Gene_list_all)
-for (i in seq_along(all_module)){
-  tmp_md = all_module_name[i]
+for (i in seq_along(names(Gene_list_all))){
+  tmp_md = names(Gene_list_all)[i]
   Module_Overrep[i,1] =  tmp_md
   Module_Overrep[i,2] = ifelse(tmp_md %in% Mod_Index_NonPre, 'Sig','Not')
   
   total.genes =  Gene_all
   sig.genes = Diff_Meth_Gene_index
-  gENEs = unlist(Preserved_Gene_list[i]);attributes(module.genes) = NULL
+  gENEs = unlist(Gene_list_all[i]);attributes(gENEs) = NULL
   N = length(total.genes)
   S = length(sig.genes) 
   m = length(total.genes[total.genes %in% gENEs]) # genes from target interpro and in our dataset
@@ -392,7 +390,6 @@ for (i in seq_along(all_module)){
   Module_Overrep[i,3] = s
   Module_Overrep[i,4] = Pval
 }
-
 
 ######=========================##########
 ##        Plot Enrichment Results     ##

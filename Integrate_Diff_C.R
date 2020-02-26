@@ -15,7 +15,8 @@ Diff_C_all = getData(methCov08Stat) %>%
 library(readxl)
 Diff_C_Sig = Diff_C_all %>% 
   dplyr::filter(qvalue <= 0.10) %>% 
-  dplyr::filter( abs(meth.diff) >= 20)
+  dplyr::filter(abs(meth.diff) >= 20)
+
 
 Diff_C_Sig_BED = Diff_C_Sig  %>% 
   dplyr::select(chr,start,end)
