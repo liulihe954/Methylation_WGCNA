@@ -574,13 +574,38 @@ length(ITFP)
 length(Neph2012)#etz
 length(Marbach2016) 
 
+
 #
 tf_database_index  = c('TRED','ENCODE','TRRUST','ITFP','Neph2012','Marbach2016')
 # 
 
+
 # get all genes _ name index
 load('gene_symbols_genome.rda')
 head(gene_symbols_genome)
+
+Trun2Bt = function(list,species = 'Bt'){
+  library(tidyverse)
+  list_new = list()
+  for (i in seq_along(names(list))){
+    tmp_name = names(list)[i]
+    tmp_index = list[[i]] %>% unlist(use.names = F)
+    for(p in seq_along(tmp_index)){
+      sub_tmp = alias2Symbol(tmp_index[p],species = species, expand.symbols = F)
+      tmp_index[p] = ifelse(length(sub_tmp)==0,tmp_index[p],sub_tmp)
+    }
+    list_new[[i]] = tmp_index
+    nwe_name_tmp = alias2Symbol(tmp_name,species = species,expand.symbols = F)
+    names(list_new)[i] = ifelse(length(nwe_name_tmp)==0,tmp_name,nwe_name_tmp)
+  }
+  return(list_new)
+}
+
+ITFP_test = ITFP[1:3]
+
+ITFP_new = Trun2Bt(ITFP_test)
+
+
 
 # container: given a module(gene set); search for overlap for each TF in all databases, record the overlap
 library(tidyverse)
@@ -634,7 +659,6 @@ for (p in seq_along(UnPreserved_Gene_list)){
   OUT = rbind(OUT,out)
 }
 #
-
 ModuleSize = data.frame(Module = names(UnPreserved_Gene_list),
                         Size = sapply(UnPreserved_Gene_list, length))
 OUT_final = OUT %>%
@@ -648,13 +672,31 @@ OUT_final = OUT %>%
          Module = V6) %>% 
   group_by(Module) %>% 
   left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
-  dplyr::filter(Overlep_Ensl >= 0.3 * Size)
+  dplyr::filter(Overlep_Ensl >= 0.4 * Size)
+
+OUT_Final_subname = OUT_final %>% 
+  mutate(subname = TF_Name)
+for (i in seq_len(dim(OUT_Final_subname)[1])){
+  tmp_name = OUT_Final_subname[i,2]
+  sub = alias2Symbol(tmp_name,species = "Bt", expand.symbols = F)
+  re = ifelse(length(sub) == 0,tmp_name,sub)
+  OUT_Final_subname[i,9] = re
+}
+
+OUT_Final = OUT_Final_subname %>% dplyr::select(-FindG) %>% dplyr::select(-subname) %>% 
+  rename(Sub_name = V9) %>% 
+  left_join(gene_symbols_genome, by = c('Sub_name' = 'external_gene_name')) %>% 
+  filter(!(Database == "Marbach2016"))
+OUT_Final[OUT_Final$Sub_name=='VARS',8] = 'ENSBTAG00000005631'
+OUT_Final[OUT_Final$Sub_name=='VARS',9] = '505556'
 #
-view(OUT_final)
+view(OUT_Final)
 
-OUT_final %>% count(Module)
+names(gene_symbols_genome)
+filter(gene_symbols_genome,external_gene_name == 'VARS1')
+filter(gene_symbols_genome,ensembl_gene_id == 'ENSBTAG00000054322')
+filter(gene_symbols_genome,ENTREZID == '518045')
 
-OUT_Final = OUT_final %>% dplyr::select(-5)
-str(OUT_Final)
+
 
 
