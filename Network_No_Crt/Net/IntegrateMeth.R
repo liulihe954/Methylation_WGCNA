@@ -547,5 +547,114 @@ print(ggplot(final, aes(x = AllPerc,
 dev.off()
 
 
+##
+# TransFactor_raw = read.csv('Bos_taurus_TF.txt',sep = "\t")
+# TransFactor_co_raw = read.csv('Bos_taurus_TF_cofactors.txt',sep = "\t")
+# head(TransFactor_co_raw)
+
+
+ov1 = test[which(test %in% Gene_list_all[[14]])]
+ov2 = Diff_Meth_Gene_index[which(Diff_Meth_Gene_index %in% test)]
+table(ov1 %in% ov2)
+
+for (i in 1:14){
+  tmp = Gene_list_all[[i]]
+  x = table(test %in% tmp)
+  print(length(tmp))
+  print(x)
+}
+
+
+# devtools::install_github("slowkow/tftargets")
+library(tftargets)
+length(TRED)#etz
+length(ENCODE)#etz
+length(TRRUST)
+length(ITFP)
+length(Neph2012)#etz
+length(Marbach2016) 
+
+#
+tf_database_index  = c('TRED','ENCODE','TRRUST','ITFP','Neph2012','Marbach2016')
+# 
+
+# get all genes _ name index
+load('gene_symbols_genome.rda')
+head(gene_symbols_genome)
+
+# container: given a module(gene set); search for overlap for each TF in all databases, record the overlap
+library(tidyverse)
+OUT = data.frame(DataBase = c(),
+                 TF_Name = c(),
+                 OverNum_Entrz = c(),
+                 OverNum_Ensl = c(),
+                 OverGene = c(),
+                 Module = c())
+for (p in seq_along(UnPreserved_Gene_list)){
+  tmp = (UnPreserved_Gene_list)[[p]]
+  module.name = names(UnPreserved_Gene_list)[p]
+  gene_collection_tmp = gene_symbols_genome %>% 
+    dplyr::filter(ensembl_gene_id %in% tmp) %>% 
+    rename(Ens = ensembl_gene_id, 
+           Symbol = external_gene_name,
+           Entrez = ENTREZID)
+  out = data.frame(DataBase = c(),
+                   TF_Name = c(),
+                   OverNum_Entrz = c(),
+                   OverNum_Ensl = c(),
+                   OverGene = c(),
+                   Module = c())
+  Module.Gene.Input = gene_collection_tmp
+  for (i in seq_along(tf_database_index)){
+    out_tmp = data.frame(DataBase = c(),
+                         TF_Name = c(),
+                         OverNum_Entrz = c(),
+                         OverNum_Ensl = c(),
+                         OverGene = c(),
+                         Module = c())
+    DB_name = tf_database_index[i]
+    tmp_TF_index = names(get(DB_name))
+    for (j in seq_along(tmp_TF_index)){
+      tmp_TF_gene_list = get(DB_name)[[j]]
+      out_tmp[i+j-1,1] = DB_name
+      out_tmp[i+j-1,2] = tmp_TF_index[j]
+      module.gene.entrz = Module.Gene.Input[,3]
+      module.gene.ensl = Module.Gene.Input[,2]
+      Ov1_Entrz = intersect(module.gene.entrz,tmp_TF_gene_list)
+      Ov2_Ensl  = intersect(module.gene.ensl,tmp_TF_gene_list)
+      out_tmp[i+j-1,3] = length(Ov1_Entrz) 
+      out_tmp[i+j-1,4] = length(Ov2_Ensl)
+      findG1_Entrz = paste(Ov1_Entrz,collapse = '/')
+      findG2_Ensl = paste(Ov2_Ensl,collapse = '/')
+      out_tmp[i+j-1,5] = ifelse(length(Ov1_Entrz) == 0,findG2_Ensl,findG1_Entrz)
+      out_tmp[i+j-1,6] = module.name
+    }
+    out = rbind(out,out_tmp)
+  }
+  OUT = rbind(OUT,out)
+}
+#
+
+ModuleSize = data.frame(Module = names(UnPreserved_Gene_list),
+                        Size = sapply(UnPreserved_Gene_list, length))
+OUT_final = OUT %>%
+  dplyr::filter(!(V3 == 0) | !(V4 == 0)) %>% 
+  drop_na() %>% 
+  rename(Database = V1,
+         TF_Name = V2,
+         Overlap_Entrz = V3,
+         Overlep_Ensl = V4,
+         FindG = V5,
+         Module = V6) %>% 
+  group_by(Module) %>% 
+  left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
+  dplyr::filter(Overlep_Ensl >= 0.3 * Size)
+#
+view(OUT_final)
+
+OUT_final %>% count(Module)
+
+OUT_Final = OUT_final %>% dplyr::select(-5)
+str(OUT_Final)
 
 

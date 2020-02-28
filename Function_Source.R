@@ -998,7 +998,7 @@ ConvertNformat = function(bg_gene,
                           TestingModAssign,
                           keyword = "Ensembl2Entrez_Convert"){
   # Get match information
-  key.symbol = AnnotationDbi::keys(org.Bt.eg.db,  keytype = c("ENSEMBL"))
+  key.symbol = AnnotationDbi::keys(org.Bt.eg.db,keytype = c("ENSEMBL"))
   entrezUniverse = AnnotationDbi::select(org.Bt.eg.db, as.character(key.symbol), 
                                          columns = c("ENTREZID"),keytype = "ENSEMBL") %>% 
     dplyr::distinct(ENSEMBL,.keep_all= TRUE)
@@ -1007,7 +1007,7 @@ ConvertNformat = function(bg_gene,
   Gather_all = data.frame(ENSEMBL  =  bg_gene,
                           assign = TestingModAssign) %>% 
     dplyr::left_join(entrezUniverse, by  = c("ENSEMBL" = "ENSEMBL"))
-  names( Gather_all)[3] = "ENTREZID_final"
+  names(Gather_all)[3] = "ENTREZID_final"
   #
   Sig_list_out = list();Total_list_out = list()
   Sig_list_out_entrez = list();Total_list_out_entrez = list()
