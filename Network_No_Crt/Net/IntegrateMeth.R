@@ -574,7 +574,6 @@ length(ITFP)
 length(Neph2012)#etz
 length(Marbach2016) 
 
-
 #
 tf_database_index  = c('TRED','ENCODE','TRRUST','ITFP','Neph2012','Marbach2016')
 # 
@@ -604,6 +603,7 @@ Trun2Bt = function(list,species = 'Bt'){
 ITFP_test = ITFP[1:3]
 
 ITFP_new = Trun2Bt(ITFP_test)
+
 
 # container: given a module(gene set); search for overlap for each TF in all databases, record the overlap
 library(tidyverse)
