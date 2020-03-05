@@ -159,7 +159,7 @@ database = useMart(biomart)
 genome = useDataset(dataset, mart = database)
 gene = getBM(attributes,mart = genome)
 gene_all_v2 = unique(gene$ensembl_gene_id)
-length(gene_all_v2)
+
 
 # 
 Genes_C_count_all_api = data.frame(Gene = c(),Total = c(),Upstream = c())

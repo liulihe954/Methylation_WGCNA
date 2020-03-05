@@ -572,27 +572,67 @@ length(ENCODE)#etz
 length(TRRUST)
 length(ITFP)
 length(Neph2012)#etz
-length(Marbach2016) 
+length(Marbach2016)
+# retrive human gene information
+library(org.Hs.eg.db);library(tidyverse)
+entrezUniverse_human = AnnotationDbi::select(org.Hs.eg.db, 
+                                             as.character(AnnotationDbi::keys(org.Hs.eg.db,keytype = c("ENSEMBL"))), 
+                                             columns = c("ENTREZID","SYMBOL"),
+                                             keytype = "ENSEMBL") %>% 
+  dplyr::distinct(ENSEMBL,.keep_all= TRUE)
+save(entrezUniverse_human,file = 'Human_gene.rda')
+load('Human_gene_human.rda')
 
-#
+length(entrezUniverse_human$SYMBOL)
+testhuman_raw = unique(entrezUniverse_human$SYMBOL)
+
+testhuman = checkGeneSymbols(testhuman_raw)
+out = (testhuman) %>% dplyr::filter(Approved != 'TRUE')
+(head(out))
+
+# 
 tf_database_index  = c('TRED','ENCODE','TRRUST','ITFP','Neph2012','Marbach2016')
 # 
-
 
 # get all genes _ name index
 load('gene_symbols_genome.rda')
 head(gene_symbols_genome)
 
-Trun2Bt = function(list,species = 'Bt'){
+
+# find if symbols are official in human database
+library(HGNChelper)
+library(tidyverse)
+library(purrr)
+symbol_test = unique(gene_symbols_genome$external_gene_name) %>% 
+  .[.!= ""] %>% 
+  checkGeneSymbols(.) %>% as_tibble() %>% 
+  dplyr::filter(Approved != 'TRUE',!(is.na(Suggested.Symbol))) %>% 
+  rename(symbol = x) %>% 
+  dplyr::select(symbol,Suggested.Symbol)
+
+
+
+names(matchUniverse)
+matchUniverse = entrezUniverse_human
+human2cow 
+
+
+
+Trun2Bt = function(list,matchUniverse,human2cow){
   library(tidyverse)
   list_new = list()
   for (i in seq_along(names(list))){
+    i = 1
     tmp_name = names(list)[i]
+    if (is.na(as.numeric(list[[i]][1]))){
+      tmp_out = list[[i]] %>% as_tibble() %>% left_join(matchUniverse,by = c('value' = 'SYMBOL'))
+      }
+    else {
+      tmp_out = list[[i]] %>% as_tibble() %>% left_join(matchUniverse,by = c('value' = 'ENTREZID'))
+      }
+    
     tmp_index = list[[i]] %>% unlist(use.names = F)
-    for(p in seq_along(tmp_index)){
-      sub_tmp = alias2Symbol(tmp_index[p],species = species, expand.symbols = F)
-      tmp_index[p] = ifelse(length(sub_tmp)==0,tmp_index[p],sub_tmp)
-    }
+    
     list_new[[i]] = tmp_index
     nwe_name_tmp = alias2Symbol(tmp_name,species = species,expand.symbols = F)
     names(list_new)[i] = ifelse(length(nwe_name_tmp)==0,tmp_name,nwe_name_tmp)
@@ -600,8 +640,24 @@ Trun2Bt = function(list,species = 'Bt'){
   return(list_new)
 }
 
-ITFP_test = ITFP[1:3]
+# Trun2Bt = function(list,species = 'Bt'){
+#   library(tidyverse)
+#   list_new = list()
+#   for (i in seq_along(names(list))){
+#     tmp_name = names(list)[i]
+#     tmp_index = list[[i]] %>% unlist(use.names = F)
+#     for(p in seq_along(tmp_index)){
+#       sub_tmp = alias2Symbol(tmp_index[p],species = species, expand.symbols = F)
+#       tmp_index[p] = ifelse(length(sub_tmp)==0,tmp_index[p],sub_tmp)
+#     }
+#     list_new[[i]] = tmp_index
+#     nwe_name_tmp = alias2Symbol(tmp_name,species = species,expand.symbols = F)
+#     names(list_new)[i] = ifelse(length(nwe_name_tmp)==0,tmp_name,nwe_name_tmp)
+#   }
+#   return(list_new)
+# }
 
+ITFP_test = ITFP[1:3]
 ITFP_new = Trun2Bt(ITFP_test)
 
 
@@ -656,6 +712,7 @@ for (p in seq_along(UnPreserved_Gene_list)){
   }
   OUT = rbind(OUT,out)
 }
+
 #
 ModuleSize = data.frame(Module = names(UnPreserved_Gene_list),
                         Size = sapply(UnPreserved_Gene_list, length))
@@ -672,6 +729,7 @@ OUT_final = OUT %>%
   left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
   dplyr::filter(Overlep_Ensl >= 0.4 * Size)
 
+
 OUT_Final_subname = OUT_final %>% 
   mutate(subname = TF_Name)
 for (i in seq_len(dim(OUT_Final_subname)[1])){
@@ -681,19 +739,20 @@ for (i in seq_len(dim(OUT_Final_subname)[1])){
   OUT_Final_subname[i,9] = re
 }
 
+
 OUT_Final = OUT_Final_subname %>% dplyr::select(-FindG) %>% dplyr::select(-subname) %>% 
   rename(Sub_name = V9) %>% 
   left_join(gene_symbols_genome, by = c('Sub_name' = 'external_gene_name')) %>% 
   filter(!(Database == "Marbach2016"))
-OUT_Final[OUT_Final$Sub_name=='VARS',8] = 'ENSBTAG00000005631'
-OUT_Final[OUT_Final$Sub_name=='VARS',9] = '505556'
 #
 view(OUT_Final)
 
-names(gene_symbols_genome)
-filter(gene_symbols_genome,external_gene_name == 'VARS1')
-filter(gene_symbols_genome,ensembl_gene_id == 'ENSBTAG00000054322')
-filter(gene_symbols_genome,ENTREZID == '518045')
+# ensembl gene symbol conversion
+Human2cow = read_tsv("human2cow_genename.tsv")
+Human2cow2 = read_tsv("human2cow2.tsv")
+
+Human2cow[1:100,]
+# 
 
 
 
