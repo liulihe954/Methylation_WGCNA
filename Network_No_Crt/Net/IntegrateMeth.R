@@ -109,9 +109,9 @@ Genes_meth_select = Genes_meth_prop %>%
   # dplyr::filter(Prop_All>= 0.05) %>%
   # dplyr::filter(Prop_Prpt>= 0.05) %>%
   # dplyr::filter(Prop_Body>= 0.05) %>%
-  dplyr::filter(Prop_Prpt >= quantile(Prop_Prpt,0.2)) %>%
-  dplyr::filter(Prop_All >= quantile(Prop_All,0.2)) %>%
-  dplyr::filter(Prop_Body >= quantile(Prop_Body,0.2)) %>%
+  dplyr::filter(Prop_Prpt >= quantile(Prop_Prpt,0.4)) %>%
+  dplyr::filter(Prop_All >= quantile(Prop_All,0.4)) %>%
+  dplyr::filter(Prop_Body >= quantile(Prop_Body,0.4)) %>%
   dplyr::filter(Prop_Prpt != 0) %>%
   dplyr::filter(Prop_All != 0) %>%
   dplyr::filter(Prop_Body != 0) %>%
@@ -567,122 +567,179 @@ for (i in 1:14){
 
 # devtools::install_github("slowkow/tftargets")
 library(tftargets)
+#detach("package:tftargets", unload=TRUE)
 length(TRED)#etz
 length(ENCODE)#etz
 length(TRRUST)
 length(ITFP)
 length(Neph2012)#etz
 length(Marbach2016)
+
+check_symbol = function(notsure){
+  tmp = checkGeneSymbols(notsure) %>% 
+    mutate(Suggested.Symbol.Merge = ifelse(is.na(Suggested.Symbol),x,Suggested.Symbol))
+  out = unlist(tmp$Suggested.Symbol.Merge,use.names = F)
+  return(out)
+}
+# out = check_symbol(symbol_test_human$Symbol)
+
 # retrive human gene information
-library(org.Hs.eg.db);library(tidyverse)
+library(org.Hs.eg.db);library(org.Bt.eg.db);library(tidyverse)
 entrezUniverse_human = AnnotationDbi::select(org.Hs.eg.db, 
                                              as.character(AnnotationDbi::keys(org.Hs.eg.db,keytype = c("ENSEMBL"))), 
                                              columns = c("ENTREZID","SYMBOL"),
                                              keytype = "ENSEMBL") %>% 
   dplyr::distinct(ENSEMBL,.keep_all= TRUE)
 save(entrezUniverse_human,file = 'Human_gene.rda')
-load('Human_gene_human.rda')
+load('Human_gene.rda')
+# find if symbols are official in human database
+library(HGNChelper)
+library(tidyverse)
+# for human
+symbol_test_human = 
+  unique(entrezUniverse_human$SYMBOL) %>% 
+  .[.!= ""] %>% 
+  checkGeneSymbols(.) %>% as_tibble() %>% 
+  dplyr::filter(Approved != 'TRUE',!(is.na(Suggested.Symbol))) %>% 
+  rename(Symbol = x) %>% 
+  dplyr::select(Symbol,Suggested.Symbol) # 207 records
+head(entrezUniverse_human)
+#
+entrezUniverse_human_corrected = entrezUniverse_human %>% 
+  left_join(symbol_test_human,by = c('SYMBOL' = 'Symbol')) %>% 
+  mutate(Suggested.Symbol.Merge = ifelse(is.na(Suggested.Symbol),SYMBOL,Suggested.Symbol))
+
+# for bovine
+load('gene_symbols_genome.rda')
+symbol_test_bovine = 
+  unique(gene_symbols_genome$external_gene_name) %>% 
+  .[.!= ""] %>% 
+  checkGeneSymbols(.) %>% as_tibble() %>% 
+  dplyr::filter(Approved != 'TRUE',!(is.na(Suggested.Symbol))) %>% 
+  rename(Symbol = x) %>% 
+  dplyr::select(Symbol,Suggested.Symbol)
+
+symbol_test_bovine_corrected = gene_symbols_genome %>% 
+  left_join(symbol_test_bovine,by = c('external_gene_name' ='Symbol')) %>% 
+  mutate(Suggested.Symbol.Merge = ifelse(is.na(Suggested.Symbol),external_gene_name,Suggested.Symbol))
+
+# for database
+
+# symbol - needs trans
+length(TRRUST)
+length(ITFP)
+length(Marbach2016)
+#
+symbollist = c('TRRUST','ITFP','Marbach2016')
+symbollist_out = c('TRRUST_cr','ITFP_cr','Marbach2016_cr')
+#
+for (i in seq_along(symbollist)){
+  tmp = get(symbollist[i])
+  name_new = check_symbol(names(tmp))
+  for (p in seq_along(name_new)){
+    names(tmp)[p] = name_new[p]
+    just4print = check_symbol(tmp[[p]])
+    #print(length(which(!(tmp[[p]]%in%just4print))))
+    print(c(i,p))
+    tmp[[p]] = just4print
+  }
+  assign(symbollist_out[i],tmp)
+}
+
+
+#
+
+#
+length(TRED)#etz
+length(ENCODE)#etz
+length(Neph2012)#etz
+SHMM = Neph2012[[29]]
+entrezlist = c('TRED','ENCODE','SHMM')
+entrezlist_out = c('TRED_cr','ENCODE_cr','SHMM_cr')
+#
+#count = c()
+#i = 1; p = 1
+for (i in seq_along(entrezlist)){
+  tmp = get(entrezlist[i])
+  name_new = check_symbol(names(tmp))
+  diff = c()
+  for (p in seq_along(name_new)){
+    names(tmp)[p] = name_new[p]
+    entrez = tmp[[p]]
+    entrez2symbol_raw = entrezUniverse_human_corrected %>% 
+      dplyr::filter(ENTREZID %in% entrez) %>% 
+      dplyr::select(Suggested.Symbol.Merge) %>% 
+      unlist(use.names = F)
+    entrez2symbol = unique(entrez2symbol_raw)
+    #diff[p] = length(entrez2symbol_raw) - length(entrez2symbol)
+    tmp[[p]] = entrez2symbol
+    print(c(i,p))
+  }
+  count = append(count,diff)
+  assign(entrezlist_out[i],tmp)
+}
+#test = entrezUniverse_human_corrected %>% dplyr::filter(ENTREZID %in% TRED[[12]]) %>% dplyr::select(ENTREZID,Suggested.Symbol.Merge)
+save(TRED_cr,
+     ENCODE_cr,
+     SHMM_cr,
+     TRRUST_cr,
+     ITFP_cr,
+     Marbach2016_cr,file = 'TF_data_cr.rda')
+
+#
+Try_Multi = function(string,test_item,pattern = ' /// '){
+  tmp = unlist(str_split(string, pattern = pattern))
+  out = intersect(tmp,test_item)
+  return(out)
+}
+# Try_Multi('EPRS1 /// QARS1 /// QARS1 /// QARS1','QARS1')
 
 length(entrezUniverse_human$SYMBOL)
 testhuman_raw = unique(entrezUniverse_human$SYMBOL)
 
-testhuman = checkGeneSymbols(testhuman_raw)
+testhuman = checkGeneSymbols('LOC786897')
+#alias2Symbol('LOC786897',species = '',expand.symbols = F)
+
 out = (testhuman) %>% dplyr::filter(Approved != 'TRUE')
-(head(out))
+out = out[is.na(out$Suggested.Symbol),]
+head(out,20)
+
 
 # 
-tf_database_index  = c('TRED','ENCODE','TRRUST','ITFP','Neph2012','Marbach2016')
+tf_database_index  = c('TRED_cr','ENCODE_cr','TRRUST_cr','ITFP_cr','Neph2012_cr','Marbach2016_cr')
 # 
-
-# get all genes _ name index
-load('gene_symbols_genome.rda')
-head(gene_symbols_genome)
-
-
-# find if symbols are official in human database
-library(HGNChelper)
-library(tidyverse)
-library(purrr)
-symbol_test = unique(gene_symbols_genome$external_gene_name) %>% 
-  .[.!= ""] %>% 
-  checkGeneSymbols(.) %>% as_tibble() %>% 
-  dplyr::filter(Approved != 'TRUE',!(is.na(Suggested.Symbol))) %>% 
-  rename(symbol = x) %>% 
-  dplyr::select(symbol,Suggested.Symbol)
-
-
-
-names(matchUniverse)
-matchUniverse = entrezUniverse_human
-human2cow 
-
-
-
-Trun2Bt = function(list,matchUniverse,human2cow){
-  library(tidyverse)
-  list_new = list()
-  for (i in seq_along(names(list))){
-    i = 1
-    tmp_name = names(list)[i]
-    if (is.na(as.numeric(list[[i]][1]))){
-      tmp_out = list[[i]] %>% as_tibble() %>% left_join(matchUniverse,by = c('value' = 'SYMBOL'))
-      }
-    else {
-      tmp_out = list[[i]] %>% as_tibble() %>% left_join(matchUniverse,by = c('value' = 'ENTREZID'))
-      }
-    
-    tmp_index = list[[i]] %>% unlist(use.names = F)
-    
-    list_new[[i]] = tmp_index
-    nwe_name_tmp = alias2Symbol(tmp_name,species = species,expand.symbols = F)
-    names(list_new)[i] = ifelse(length(nwe_name_tmp)==0,tmp_name,nwe_name_tmp)
-  }
-  return(list_new)
-}
-
-# Trun2Bt = function(list,species = 'Bt'){
-#   library(tidyverse)
-#   list_new = list()
-#   for (i in seq_along(names(list))){
-#     tmp_name = names(list)[i]
-#     tmp_index = list[[i]] %>% unlist(use.names = F)
-#     for(p in seq_along(tmp_index)){
-#       sub_tmp = alias2Symbol(tmp_index[p],species = species, expand.symbols = F)
-#       tmp_index[p] = ifelse(length(sub_tmp)==0,tmp_index[p],sub_tmp)
-#     }
-#     list_new[[i]] = tmp_index
-#     nwe_name_tmp = alias2Symbol(tmp_name,species = species,expand.symbols = F)
-#     names(list_new)[i] = ifelse(length(nwe_name_tmp)==0,tmp_name,nwe_name_tmp)
-#   }
-#   return(list_new)
-# }
-
-ITFP_test = ITFP[1:3]
-ITFP_new = Trun2Bt(ITFP_test)
-
 
 # container: given a module(gene set); search for overlap for each TF in all databases, record the overlap
 library(tidyverse)
 OUT = data.frame(DataBase = c(),
                  TF_Name = c(),
-                 OverNum_Entrz = c(),
                  OverNum_Ensl = c(),
                  OverGene = c(),
                  Module = c())
+
+head(entrezUniverse_human_corrected)
+head(symbol_test_bovine_corrected)
+
+p = 1
+
 for (p in seq_along(UnPreserved_Gene_list)){
   tmp = (UnPreserved_Gene_list)[[p]]
   module.name = names(UnPreserved_Gene_list)[p]
-  gene_collection_tmp = gene_symbols_genome %>% 
-    dplyr::filter(ensembl_gene_id %in% tmp) %>% 
-    rename(Ens = ensembl_gene_id, 
-           Symbol = external_gene_name,
-           Entrez = ENTREZID)
+  gene_collection_tmp = symbol_test_bovine_corrected %>% 
+    dplyr::filter(ensembl_gene_id %in% tmp) #%>% 
+  
+    dplyr::select(Suggested.Symbol.Merge) %>% 
+    unique() %>% drop_na()# %>% unlist(use.names = F)
+  
+  
+  names(gene_collection_tmp)
   out = data.frame(DataBase = c(),
                    TF_Name = c(),
-                   OverNum_Entrz = c(),
                    OverNum_Ensl = c(),
                    OverGene = c(),
                    Module = c())
+  filter(n()>1)
+  
   Module.Gene.Input = gene_collection_tmp
   for (i in seq_along(tf_database_index)){
     out_tmp = data.frame(DataBase = c(),
@@ -713,7 +770,7 @@ for (p in seq_along(UnPreserved_Gene_list)){
   OUT = rbind(OUT,out)
 }
 
-#
+
 ModuleSize = data.frame(Module = names(UnPreserved_Gene_list),
                         Size = sapply(UnPreserved_Gene_list, length))
 OUT_final = OUT %>%
@@ -746,14 +803,3 @@ OUT_Final = OUT_Final_subname %>% dplyr::select(-FindG) %>% dplyr::select(-subna
   filter(!(Database == "Marbach2016"))
 #
 view(OUT_Final)
-
-# ensembl gene symbol conversion
-Human2cow = read_tsv("human2cow_genename.tsv")
-Human2cow2 = read_tsv("human2cow2.tsv")
-
-Human2cow[1:100,]
-# 
-
-
-
-
