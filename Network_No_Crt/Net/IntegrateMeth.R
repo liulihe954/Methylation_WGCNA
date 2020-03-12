@@ -686,66 +686,48 @@ save(TRED_cr,
      ITFP_cr,
      Marbach2016_cr,file = 'TF_data_cr.rda')
 
-#
-Try_Multi = function(string,test_item,pattern = ' /// '){
-  tmp = unlist(str_split(string, pattern = pattern))
-  out = intersect(tmp,test_item)
-  return(out)
-}
-# Try_Multi('EPRS1 /// QARS1 /// QARS1 /// QARS1','QARS1')
-
-length(entrezUniverse_human$SYMBOL)
-testhuman_raw = unique(entrezUniverse_human$SYMBOL)
-
-testhuman = checkGeneSymbols('LOC786897')
-#alias2Symbol('LOC786897',species = '',expand.symbols = F)
-
-out = (testhuman) %>% dplyr::filter(Approved != 'TRUE')
-out = out[is.na(out$Suggested.Symbol),]
-head(out,20)
-
-
 # 
-tf_database_index  = c('TRED_cr','ENCODE_cr','TRRUST_cr','ITFP_cr','Neph2012_cr','Marbach2016_cr')
+tf_database_index  = c('TRED_cr','ENCODE_cr','TRRUST_cr','ITFP_cr','SHMM_cr','Marbach2016_cr')
 # 
 
 # container: given a module(gene set); search for overlap for each TF in all databases, record the overlap
 library(tidyverse)
-OUT = data.frame(DataBase = c(),
-                 TF_Name = c(),
-                 OverNum_Ensl = c(),
-                 OverGene = c(),
-                 Module = c())
-
-head(entrezUniverse_human_corrected)
-head(symbol_test_bovine_corrected)
-
-p = 1
-
-for (p in seq_along(UnPreserved_Gene_list)){
-  tmp = (UnPreserved_Gene_list)[[p]]
-  module.name = names(UnPreserved_Gene_list)[p]
-  gene_collection_tmp = symbol_test_bovine_corrected %>% 
-    dplyr::filter(ensembl_gene_id %in% tmp) #%>% 
-  
+# Data Structure Preperation
+Gene_list_all = append(UnPreserved_Gene_list,Preserved_Gene_list)
+ModuleName_Unpreserved = names(UnPreserved_Gene_list)
+ModuleName_Preserves = names(Preserved_Gene_list)
+# gene convert output container
+GeneConvert = data.frame(ModuleName = c(),
+                         Preseravtion = c(),
+                         GeneCount = c(),
+                         DupCount = c(), # only rm na
+                         FinalCount = c()) # rm dup
+# output container
+OUT = OverlapOut = data.frame(DataBase = c(),
+                              TF_Name = c(),
+                              OverNum_Ensl = c(),
+                              OverGene = c(),
+                              Module = c())
+for (p in seq_along(Gene_list_all)){
+  # convert gene id to symbols
+  tmp = (Gene_list_all)[[p]]
+  md_name_tmp = names(Gene_list_all)[p]
+  GeneConvert[p,1] = md_name_tmp
+  GeneConvert[p,2] = ifelse(md_name_tmp %in% ModuleName_Unpreserved,'Unpreserved','Preserved')
+  GeneConvert[p,3] = length(tmp)
+  gene_collection_tmp_raw = symbol_test_bovine_corrected %>% 
+    dplyr::filter(ensembl_gene_id %in% tmp) %>% 
     dplyr::select(Suggested.Symbol.Merge) %>% 
-    unique() %>% drop_na()# %>% unlist(use.names = F)
-  
-  
-  names(gene_collection_tmp)
-  out = data.frame(DataBase = c(),
-                   TF_Name = c(),
-                   OverNum_Ensl = c(),
-                   OverGene = c(),
-                   Module = c())
-  filter(n()>1)
-  
+    drop_na() %>% unlist(use.names = F)
+  gene_collection_tmp = gene_collection_tmp_raw %>% unique()
+  GeneConvert[p,4] = length(gene_collection_tmp_raw)
+  GeneConvert[p,5] = length(gene_collection_tmp)
+  #
   Module.Gene.Input = gene_collection_tmp
   for (i in seq_along(tf_database_index)){
     out_tmp = data.frame(DataBase = c(),
                          TF_Name = c(),
-                         OverNum_Entrz = c(),
-                         OverNum_Ensl = c(),
+                         OverNum = c(),
                          OverGene = c(),
                          Module = c())
     DB_name = tf_database_index[i]
@@ -754,52 +736,60 @@ for (p in seq_along(UnPreserved_Gene_list)){
       tmp_TF_gene_list = get(DB_name)[[j]]
       out_tmp[i+j-1,1] = DB_name
       out_tmp[i+j-1,2] = tmp_TF_index[j]
-      module.gene.entrz = Module.Gene.Input[,3]
-      module.gene.ensl = Module.Gene.Input[,2]
-      Ov1_Entrz = intersect(module.gene.entrz,tmp_TF_gene_list)
-      Ov2_Ensl  = intersect(module.gene.ensl,tmp_TF_gene_list)
-      out_tmp[i+j-1,3] = length(Ov1_Entrz) 
-      out_tmp[i+j-1,4] = length(Ov2_Ensl)
-      findG1_Entrz = paste(Ov1_Entrz,collapse = '/')
-      findG2_Ensl = paste(Ov2_Ensl,collapse = '/')
-      out_tmp[i+j-1,5] = ifelse(length(Ov1_Entrz) == 0,findG2_Ensl,findG1_Entrz)
-      out_tmp[i+j-1,6] = module.name
+      special_intersect = function(test_list,
+                                   database_list,
+                                   pattern = ' /// '){
+        Try_Multi = function(test_list,database_list,pattern = ' /// '){
+          tmp = unlist(str_split(database_list, pattern = pattern))
+          out = intersect(tmp,test_list)
+          return(out)
+        }
+        out_list = intersect(test_list,database_list)
+        Multi_index = grepl(pattern,database_list)
+        Multi_out = database_list[Multi_index]
+        for (i in seq_along(Multi_out)){
+          findone = Try_Multi(test_list,Multi_out[i])
+          out_list = append(out_list,findone,after = length(out_list))
+        }
+        count = length(out_list)
+        return(out_list)
+      }
+      theoverlap = special_intersect(gene_collection_tmp,tmp_TF_gene_list)
+      out_tmp[i+j-1,3] = length(theoverlap)
+      out_tmp[i+j-1,4] = ifelse(length(theoverlap) == 0,0,length(theoverlap))
+      out_tmp[i+j-1,5] = md_name_tmp
+      print(c(p,i,j))
     }
-    out = rbind(out,out_tmp)
+    OUT = rbind(OUT,out_tmp)
   }
-  OUT = rbind(OUT,out)
+  OverlapOut = rbind(OverlapOut,OUT)
 }
 
+table(OverlapOut$V5)
 
+head(OverlapOut)
 ModuleSize = data.frame(Module = names(UnPreserved_Gene_list),
                         Size = sapply(UnPreserved_Gene_list, length))
-OUT_final = OUT %>%
-  dplyr::filter(!(V3 == 0) | !(V4 == 0)) %>% 
+
+OverlapOut_final = OverlapOut %>%
+  dplyr::filter(!(V3 == 0)) %>% 
   drop_na() %>% 
   rename(Database = V1,
          TF_Name = V2,
-         Overlap_Entrz = V3,
-         Overlep_Ensl = V4,
-         FindG = V5,
-         Module = V6) %>% 
+         Overlap_Count = V3,
+         FindG = V4,
+         Module = V5) %>% 
   group_by(Module) %>% 
+  mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
   left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
-  dplyr::filter(Overlep_Ensl >= 0.4 * Size)
+  dplyr::filter(Overlap_Count >= 0.3 * Size) %>% 
+  filter(Database != "Marbach2016_cr")
 
+view(OverlapOut_final)
+table(OverlapOut_final$Database)
 
-OUT_Final_subname = OUT_final %>% 
-  mutate(subname = TF_Name)
-for (i in seq_len(dim(OUT_Final_subname)[1])){
-  tmp_name = OUT_Final_subname[i,2]
-  sub = alias2Symbol(tmp_name,species = "Bt", expand.symbols = F)
-  re = ifelse(length(sub) == 0,tmp_name,sub)
-  OUT_Final_subname[i,9] = re
-}
+head(OverlapOut_final)
+dim(OverlapOut_final)
 
-
-OUT_Final = OUT_Final_subname %>% dplyr::select(-FindG) %>% dplyr::select(-subname) %>% 
-  rename(Sub_name = V9) %>% 
-  left_join(gene_symbols_genome, by = c('Sub_name' = 'external_gene_name')) %>% 
-  filter(!(Database == "Marbach2016"))
 #
 view(OUT_Final)
