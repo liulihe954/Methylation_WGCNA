@@ -39,6 +39,8 @@ Associ_out_raw = read_xlsx('DiffC_Gene.xlsx') %>% dplyr::filter(Gene != "-") %>%
 # colnames(Associ_out_raw) = cname
 # Associ_out_raw = Associ_out_raw[-1,]
 
+#
+
 ####
 # custom function to transpose while preserving names
 transpose_df <- function(df) {
@@ -116,7 +118,6 @@ Genes_meth_select = Genes_meth_prop %>%
   dplyr::filter(Prop_All != 0) %>%
   dplyr::filter(Prop_Body != 0) %>%
   arrange(Prop_All)
-
 Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
 length(Diff_Meth_Gene_index)
 
@@ -153,25 +154,47 @@ Mod_Index_Pre = Mod_Index_Pre[-grep('gold',Mod_Index_Pre)]
 ##        diff C prop vs M.M           ##
 ######=========================##########
 #
+#install.packages('DCGL')
+library(DCGL)
+test = DCGL::WGCNA((t(datExpr_control)),(t(datExpr_treatment)),
+                   power = 24, variant = "DCp")
+Diff_Coexp = data.frame(Gene = names(test),
+                        DCG = test,row.names = NULL) %>% 
+  left_join(Genes_meth_prop, by = c('Gene' = 'Gene')) %>% 
+  dplyr::select(Gene,DCG,Prop_Body,Prop_Prpt,Prop_All) %>% 
+  drop_na()
 
-names(datKME)
-
-plot(test)
-test = scale(data_tmp$Scale_prop_all)
-summary(test)
-names(datKME)
+Diff_Coexp_plot = Diff_Coexp %>%
+  pivot_longer(cols = c(Prop_All,Prop_Prpt,Prop_Body),
+               names_to = "Cat", values_to = "Prop")
+print(
+  ggplot(Diff_Coexp_plot, aes(x = DCG ,y = Prop, colour = Cat)) + # y = Scale_prop
+    geom_point() + 
+    geom_jitter(width = 0.0001, height = 0.0001,alpha = 1) + 
+    geom_smooth(method=lm)+
+    ggtitle("Methylation VS DCG Score") +
+    xlab("InModule_Con") + ylab("MethC_Prop") +
+    guides(color=guide_legend(title="Genomic Regions")) +
+    scale_color_manual(labels = c("All","Upper","Body"),
+                       values = c("Green","blue", "turquoise"))+
+    theme(legend.key = element_rect(fill = "transparent", colour = "transparent"),
+          #legend.key = element_rect(colour = 'black', fill = 'blank', size = 0.5, linetype='dashed'),
+          legend.position='top', 
+          plot.title = element_text(hjust = 0.5)))
+dev.off()
+dim(Diff_Coexp_plot)
 
 #i = 3
-pdf('PDF_Results_NonP.pdf')
+pdf('PDF_Results_NonP_test.pdf')
 for (i in seq_along(Mod_Index_NonPre)){
   text = Mod_Index_NonPre[i]
   sub = paste('kME',text,sep = '')
   # subset input data
-  data_tmp = subset(datKME,MdouleAssign == text) %>% 
+  data_tmp = subset(datKME,MdouleAssign == text) %>% drop_na() %>% 
     dplyr::mutate(Scale_KME = scale(get(sub))) %>%
-    dplyr::mutate(Scale_prop_all = scale(Diff_Prop_all)) %>% 
-    dplyr::mutate(Scale_prop_prmt = scale(Diff_Prop_prom)) %>% 
-    dplyr::mutate(Scale_prop_body = scale(Diff_Prop_body)) %>% 
+    dplyr::mutate(Scale_prop_all = scale(Prop_All)) %>% 
+    dplyr::mutate(Scale_prop_prmt = scale(Prop_Prpt)) %>% 
+    dplyr::mutate(Scale_prop_body = scale(Prop_Body)) %>% 
     # dplyr::mutate(Scale_prop_all = Diff_Prop_all/max(Diff_Prop_all)) %>% 
     # dplyr::mutate(Scale_prop_prmt = Diff_Prop_prom/max(Diff_Prop_prom)) %>% 
     # dplyr::mutate(Scale_prop_body = Diff_Prop_body/max(Diff_Prop_body)) %>% 
@@ -197,17 +220,16 @@ for (i in seq_along(Mod_Index_NonPre)){
 }
 dev.off()
 
-
-pdf('PDF_Results_Pre.pdf')
+pdf('PDF_Results_Pre_test.pdf')
 for (i in seq_along(Mod_Index_Pre)){
   text = Mod_Index_Pre[i]
   sub = paste('kME',text,sep = '')
   # subset input data
-  data_tmp = subset(datKME,MdouleAssign == text) %>% 
+  data_tmp = subset(datKME,MdouleAssign == text) %>% drop_na() %>% 
     dplyr::mutate(Scale_KME = scale(get(sub))) %>%
-    dplyr::mutate(Scale_prop_all = scale(Diff_Prop_all)) %>% 
-    dplyr::mutate(Scale_prop_prmt = scale(Diff_Prop_prom)) %>% 
-    dplyr::mutate(Scale_prop_body = scale(Diff_Prop_body)) %>% 
+    dplyr::mutate(Scale_prop_all = scale(Prop_All)) %>% 
+    dplyr::mutate(Scale_prop_prmt = scale(Prop_Prpt)) %>% 
+    dplyr::mutate(Scale_prop_body = scale(Prop_Body)) %>%  
     # dplyr::mutate(Scale_prop_all = Diff_Prop_all/max(Diff_Prop_all)) %>% 
     # dplyr::mutate(Scale_prop_prmt = Diff_Prop_prom/max(Diff_Prop_prom)) %>% 
     # dplyr::mutate(Scale_prop_body = Diff_Prop_body/max(Diff_Prop_body)) %>% 
@@ -342,7 +364,6 @@ for ( i in seq_along(Mod_Index_Pre)){
 save(UnPreserved_Gene_list,
      Preserved_Gene_list,
      file = 'Gene_list_by_module.rda')
-
 ##
 load('Gene_list_by_module.rda')
 
@@ -350,16 +371,30 @@ names(Preserved_Gene_list)
 # genes captured in all category
 Gene_all = unique(rownames(networkData_normalized))
 Gene_net = unique(rownames(networkData_50var_nocrt))
-
+# 
 Gene_grey = datKME %>% 
   dplyr::filter(MdouleAssign == 'grey') %>% 
   dplyr::select(Gene) %>% 
   unlist(use.names = F)
 
-table(Diff_Meth_Gene_index %in% Gene_all)
-table(Diff_Meth_Gene_index %in% Gene_net)
-table(Diff_Meth_Gene_index %in% Gene_grey)
 
+# Define differentially methylated genes
+
+Genes_meth_select = Genes_meth_prop %>% 
+  dplyr::filter((Count1 >= 20 | Count2 >= 3)) %>% 
+  # dplyr::filter(Prop_All>= 0.05) %>%
+  # dplyr::filter(Prop_Prpt>= 0.05) %>%
+  # dplyr::filter(Prop_Body>= 0.05) %>%
+  dplyr::filter(Prop_Prpt >= quantile(Prop_Prpt,0.2)) %>%
+  dplyr::filter(Prop_All >= quantile(Prop_All,0.2)) %>%
+  dplyr::filter(Prop_Body >= quantile(Prop_Body,0.2)) %>%
+  dplyr::filter(Prop_Prpt != 0) %>%
+  dplyr::filter(Prop_All != 0) %>%
+  dplyr::filter(Prop_Body != 0) %>%
+  arrange(Prop_All)
+
+Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
+length(Diff_Meth_Gene_index)
 #
 Module_Overrep= data.frame(ModuleName = c(),
                             PreservationStatus = c(),
@@ -375,7 +410,6 @@ for (i in seq_along(names(Gene_list_all))){
   tmp_md = names(Gene_list_all)[i]
   Module_Overrep[i,1] =  tmp_md
   Module_Overrep[i,2] = ifelse(tmp_md %in% Mod_Index_NonPre, 'Sig','Not')
-  
   total.genes =  Gene_all
   sig.genes = Diff_Meth_Gene_index
   gENEs = unlist(Gene_list_all[i]);attributes(gENEs) = NULL
@@ -390,6 +424,38 @@ for (i in seq_along(names(Gene_list_all))){
   Module_Overrep[i,3] = s
   Module_Overrep[i,4] = Pval
 }
+Module_Overrep
+
+#
+Diff_Coexp_selected = Diff_Coexp %>% 
+  dplyr::filter(DCG >= quantile(DCG,0.8)) %>% 
+  dplyr::select(Gene) %>% unlist(.,use.names = F)
+length(Diff_Coexp_selected)
+
+Module_Overrep_DCG= data.frame(ModuleName = c(), PreservationStatus = c(),
+                               #ModuleSize = c(),
+                               No.Overlap = c(),
+                               Pvalue = c())
+sig.genes = Diff_Coexp_selected
+for (i in seq_along(names(Gene_list_all))){
+  tmp_md = names(Gene_list_all)[i]
+  Module_Overrep_DCG[i,1] =  tmp_md
+  Module_Overrep_DCG[i,2] = ifelse(tmp_md %in% Mod_Index_NonPre, 'Sig','Not')
+  total.genes =  Gene_all
+  sig.genes = sig.genes
+  gENEs = unlist(Gene_list_all[i]);attributes(gENEs) = NULL
+  N = length(total.genes)
+  S = length(sig.genes) 
+  m = length(total.genes[total.genes %in% gENEs]) # genes from target interpro and in our dataset
+  findG = sig.genes[sig.genes %in% gENEs]
+  s = length(findG) # # genes from target interpro also in the non-preserved module
+  PastefindG = paste(findG, collapse="/")
+  M = matrix(c(s,S-s,m-s,N-m-S+s),byrow = 2, nrow = 2)
+  Pval = round(fisher.test(M, alternative ="g")$p.value,100)
+  Module_Overrep_DCG[i,3] = s
+  Module_Overrep_DCG[i,4] = Pval
+}
+Module_Overrep_DCG
 
 ######=========================##########
 ##        Plot Enrichment Results     ##
@@ -546,12 +612,10 @@ print(ggplot(final, aes(x = AllPerc,
         axis.title.y = element_text(size=14, face="bold")))
 dev.off()
 
-
 ##
 # TransFactor_raw = read.csv('Bos_taurus_TF.txt',sep = "\t")
 # TransFactor_co_raw = read.csv('Bos_taurus_TF_cofactors.txt',sep = "\t")
 # head(TransFactor_co_raw)
-
 
 ov1 = test[which(test %in% Gene_list_all[[14]])]
 ov2 = Diff_Meth_Gene_index[which(Diff_Meth_Gene_index %in% test)]
@@ -563,7 +627,6 @@ for (i in 1:14){
   print(length(tmp))
   print(x)
 }
-
 
 # devtools::install_github("slowkow/tftargets")
 library(tftargets)
@@ -624,7 +687,6 @@ symbol_test_bovine_corrected = gene_symbols_genome %>%
   mutate(Suggested.Symbol.Merge = ifelse(is.na(Suggested.Symbol),external_gene_name,Suggested.Symbol))
 
 # for database
-
 # symbol - needs trans
 length(TRRUST)
 length(ITFP)
@@ -645,10 +707,6 @@ for (i in seq_along(symbollist)){
   }
   assign(symbollist_out[i],tmp)
 }
-
-
-#
-
 #
 length(TRED)#etz
 length(ENCODE)#etz
@@ -690,7 +748,6 @@ save(TRED_cr,
 tf_database_index  = c('TRED_cr','ENCODE_cr','TRRUST_cr','ITFP_cr','SHMM_cr','Marbach2016_cr')
 # 
 
-
 # container: given a module(gene set); search for overlap for each TF in all databases, record the overlap
 library(tidyverse)
 # Data Structure Preperation
@@ -704,6 +761,7 @@ GeneConvert = data.frame(ModuleName = c(),
                          DupCount = c(), # only rm na
                          FinalCount = c()) # rm dup
 # output container
+
 
 #
 special_intersect = function(test_list,
@@ -790,9 +848,14 @@ Bta_TF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 4,startRow = 6) %>%
   dplyr::filter(Bovine_Class %in% c('a','b')) %>% 
   dplyr::filter(!(TF_Symbol %in% c('.'))) %>% 
   dplyr::select(-Bovine_Class)
+# TcoF
+Bta_TcoF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 5,startRow = 6) %>% 
+  dplyr::select(TcoF_ID,TF_ID,TcoF_Class) %>% 
+  dplyr::filter(TcoF_Class %in% c('High'))
+
 #
-ModuleSize = data.frame(Module = names(UnPreserved_Gene_list),
-                        Size = sapply(UnPreserved_Gene_list, length))
+ModuleSize = data.frame(Module = names(Gene_list_all),
+                        Size = sapply(Gene_list_all, length))
 Bta_TF_match = Bta_TF_raw %>% 
   right_join(OverlapOut,by = c('TF_Symbol' = 'TF_Name')) %>% 
   dplyr::filter(!(is.na(Ensembl_ID))) %>% 
@@ -800,18 +863,254 @@ Bta_TF_match = Bta_TF_raw %>%
   drop_na() %>% 
   group_by(Module) %>% 
   mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
-  left_join(ModuleSize, by = c('Module' = 'Module')) 
+  left_join(ModuleSize, by = c('Module' = 'Module'))
+
+# pre and non-pre
+Bta_TF_match_Unpre = Bta_TF_match %>% dplyr::filter(Pres == 'Unpre') %>% 
+  left_join(Bta_TcoF_raw, by = c('Ensembl_ID' = 'TF_ID'))
+head(Bta_TF_match_Unpre)
+Bta_TF_match_Pre = Bta_TF_match %>% dplyr::filter(Pres == 'Pre') %>% 
+  left_join(Bta_TcoF_raw, by = c('Ensembl_ID' = 'TF_ID'))
+head(Bta_TF_match_Pre)
+# sig
 Bta_TF_match_sig = Bta_TF_match %>% 
   dplyr::filter(OverGene >= 0.4 * Size) #%>% filter(DataBase != "Marbach2016_cr")
 
-Bta_TcoF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 5,startRow = 6) %>% 
-  dplyr::select(TcoF_ID,TF_ID,TcoF_Class) %>% 
-  dplyr::filter(TcoF_Class %in% c('High'))
+## Incorporate methylation
+head(Genes_meth_prop)
+Genes_meth_prop_TF_Unpre = Genes_meth_prop %>% 
+  dplyr::select(Gene,Prop_Body,Prop_Prpt,Prop_All) %>% 
+  right_join(Bta_TF_match_Unpre,by = c('Gene' = 'Ensembl_ID')) %>% 
+  drop_na()
+Genes_meth_prop_TF_Pre = Genes_meth_prop %>% 
+  dplyr::select(Gene,Prop_Body,Prop_Prpt,Prop_All) %>% 
+  right_join(Bta_TF_match_Pre,by = c('Gene' = 'Ensembl_ID')) %>% 
+  drop_na()
+#
+Gene_list_all = append(UnPreserved_Gene_list,Preserved_Gene_list)
+ModuleName_Unpreserved = names(UnPreserved_Gene_list)
+ModuleName_Preserves = names(Preserved_Gene_list)
 
-## TF info for different category / pres or non-pres
+Gene_list_Unpre = c()
+Gene_list_Pre = c()
+for (i in names(UnPreserved_Gene_list)){
+  tmp = unlist(UnPreserved_Gene_list[[i]],use.names = F)
+  Gene_list_Unpre = append(Gene_list_Unpre,tmp,length(Gene_list_Unpre))
+}
+for (i in names(Preserved_Gene_list)){
+  tmp = unlist(Preserved_Gene_list[[i]],use.names = F)
+  Gene_list_Pre = append(Gene_list_Pre,tmp,length(Gene_list_Pre))
+}
+Gene_list_Unpre_meth = data.frame(Gene = Gene_list_Unpre) %>% 
+  left_join(Genes_meth_prop, by = c('Gene' = 'Gene')) %>% 
+  dplyr::select(Gene,Prop_Body,Prop_Prpt,Prop_All) %>% 
+  drop_na()
+Gene_list_Pre_meth = data.frame(Gene = Gene_list_Pre) %>%  
+  left_join(Genes_meth_prop, by = c('Gene' = 'Gene')) %>% 
+  dplyr::select(Gene,Prop_Body,Prop_Prpt,Prop_All) %>% 
+  drop_na()
+
+a = Genes_meth_prop_TF_Unpre$Prop_All
+b =Genes_meth_prop_TF_Unpre$Prop_Prpt
+c =Genes_meth_prop_TF_Unpre$Prop_Body
+d =Genes_meth_prop_TF_Pre$Prop_All
+e =Genes_meth_prop_TF_Pre$Prop_Prpt
+f =Genes_meth_prop_TF_Pre$Prop_Body
+oo = c()
+ii = letters[1:6]
+for (t in 1:6){
+  oo[t] = mean(get(ii[t]))
+}
+
+#
+boxplot(Gene_list_Unpre_meth$Prop_All,
+        Gene_list_Pre_meth$Prop_All,
+        Genes_meth_prop_TF_Unpre$Prop_All,
+        Genes_meth_prop_TF_Unpre$Prop_Prpt,
+        Genes_meth_prop_TF_Unpre$Prop_Body,
+        Genes_meth_prop_TF_Pre$Prop_All,
+        Genes_meth_prop_TF_Pre$Prop_Prpt,
+        Genes_meth_prop_TF_Pre$Prop_Body)
+
+######=========================##########
+##        Hyper G test                ##
+######========================##########
+setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
+
+# library(biomaRt)
+# genome <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",  dataset = "btaurus_gene_ensembl", host = "grch37.ensembl.org")
+# gene = getBM(c("ensembl_gene_id","external_gene_name", "start_position", "end_position", "chromosome_name"), mart = genome)
+# Gene_genome = unique(gene$ensembl_gene_id)
+# 
+# table(Gene_all %in% Gene_genome)
+# '%!in%' <- function(x,y)!('%in%'(x,y))
+# table(Gene_net %in% Gene_genome)
+# test = Gene_net[which(Gene_net %!in% Gene_genome)]
+# head(test)
+# 
+# Diff_Meth_Gene_index[which(Diff_Meth_Gene_index%in%test)]
+
+# gene index pre
+Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
+length(Diff_Meth_Gene_index)
+
+# Analysis and display of module preservation results
+load("modulePreservation_methionine.RData")
+# test = mp$preservation$Z$ref.control
+# stats = mp$preservation$Z$ref.control$inColumnsAlsoPresentIn.treatment
+# Results_mp = stats[order(-stats[,2]),c(1:2)]
+# head(stats)
+# head(Results_mp)
+
+Mod_Index_NonPre  = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
+Mod_Index_Pre = rownames(Z.PreservationStats)[-nonpres_index_b]
+
+# massage gene list
+Module_assign_all = data.frame(Gene = Gene_net,
+                               Assign = moduleColors_control)
+UnPreserved_Gene_list = list()
+for ( i in seq_along(Mod_Index_NonPre)){
+  tmp = as.character(subset(Module_assign_all,Assign == Mod_Index_NonPre[i])$Gene)
+  UnPreserved_Gene_list[[i]] = tmp #
+  names(UnPreserved_Gene_list)[i]= Mod_Index_NonPre[i]
+}
+Preserved_Gene_list = list()
+Mod_Index_Pre = Mod_Index_Pre[-grep('gold',Mod_Index_Pre)]
+for ( i in seq_along(Mod_Index_Pre)){
+  tmp = as.character(subset(Module_assign_all,Assign == Mod_Index_Pre[i])$Gene)
+  Preserved_Gene_list[[i]] = tmp #
+  names(Preserved_Gene_list)[i]= Mod_Index_Pre[i]
+}
+#
+save(UnPreserved_Gene_list,
+     Preserved_Gene_list,
+     file = 'Gene_list_by_module.rda')
+##
+load('Gene_list_by_module.rda')
+
+names(Preserved_Gene_list)
+# genes captured in all category
+Gene_all = unique(rownames(networkData_normalized))
+Gene_net = unique(rownames(networkData_50var_nocrt))
+# 
+Gene_grey = datKME %>% 
+  dplyr::filter(MdouleAssign == 'grey') %>% 
+  dplyr::select(Gene) %>% 
+  unlist(use.names = F)
 
 
+# Define differentially methylated genes
 
+Genes_meth_select = Genes_meth_prop %>% 
+  dplyr::filter((Count1 >= 20 | Count2 >= 3)) %>% 
+  # dplyr::filter(Prop_All>= 0.05) %>%
+  # dplyr::filter(Prop_Prpt>= 0.05) %>%
+  # dplyr::filter(Prop_Body>= 0.05) %>%
+  dplyr::filter(Prop_Prpt >= quantile(Prop_Prpt,0.2)) %>%
+  dplyr::filter(Prop_All >= quantile(Prop_All,0.2)) %>%
+  dplyr::filter(Prop_Body >= quantile(Prop_Body,0.2)) %>%
+  dplyr::filter(Prop_Prpt != 0) %>%
+  dplyr::filter(Prop_All != 0) %>%
+  dplyr::filter(Prop_Body != 0) %>%
+  arrange(Prop_All)
 
+Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
+length(Diff_Meth_Gene_index)
+#
+Module_Overrep= data.frame(ModuleName = c(),
+                           PreservationStatus = c(),
+                           #ModuleSize = c(),
+                           No.Overlap = c(),
+                           Pvalue = c())
+Gene_list_all = append(Preserved_Gene_list,UnPreserved_Gene_list)
+Grey = list(Grey = Gene_grey)
+Gene_list_all = append(Gene_list_all,Grey)
+length(Gene_list_all)
 
+for (i in seq_along(names(Gene_list_all))){
+  tmp_md = names(Gene_list_all)[i]
+  Module_Overrep[i,1] =  tmp_md
+  Module_Overrep[i,2] = ifelse(tmp_md %in% Mod_Index_NonPre, 'Sig','Not')
+  total.genes =  Gene_all
+  sig.genes = Diff_Meth_Gene_index
+  gENEs = unlist(Gene_list_all[i]);attributes(gENEs) = NULL
+  N = length(total.genes)
+  S = length(sig.genes) 
+  m = length(total.genes[total.genes %in% gENEs]) # genes from target interpro and in our dataset
+  findG = sig.genes[sig.genes %in% gENEs]
+  s = length(findG) # # genes from target interpro also in the non-preserved module
+  PastefindG = paste(findG, collapse="/")
+  M = matrix(c(s,S-s,m-s,N-m-S+s),byrow = 2, nrow = 2)
+  Pval = round(fisher.test(M, alternative ="g")$p.value,100)
+  Module_Overrep[i,3] = s
+  Module_Overrep[i,4] = Pval
+}
+Module_Overrep
 
+#
+Diff_Coexp_selected = Diff_Coexp %>% 
+  dplyr::filter(DCG >= quantile(DCG,0.8)) %>% 
+  dplyr::select(Gene) %>% unlist(.,use.names = F)
+length(Diff_Coexp_selected)
+
+Module_Overrep_DCG= data.frame(ModuleName = c(), PreservationStatus = c(),
+                               #ModuleSize = c(),
+                               No.Overlap = c(),
+                               Pvalue = c())
+sig.genes = Diff_Coexp_selected
+for (i in seq_along(names(Gene_list_all))){
+  tmp_md = names(Gene_list_all)[i]
+  Module_Overrep_DCG[i,1] =  tmp_md
+  Module_Overrep_DCG[i,2] = ifelse(tmp_md %in% Mod_Index_NonPre, 'Sig','Not')
+  total.genes =  Gene_all
+  sig.genes = sig.genes
+  gENEs = unlist(Gene_list_all[i]);attributes(gENEs) = NULL
+  N = length(total.genes)
+  S = length(sig.genes) 
+  m = length(total.genes[total.genes %in% gENEs]) # genes from target interpro and in our dataset
+  findG = sig.genes[sig.genes %in% gENEs]
+  s = length(findG) # # genes from target interpro also in the non-preserved module
+  PastefindG = paste(findG, collapse="/")
+  M = matrix(c(s,S-s,m-s,N-m-S+s),byrow = 2, nrow = 2)
+  Pval = round(fisher.test(M, alternative ="g")$p.value,100)
+  Module_Overrep_DCG[i,3] = s
+  Module_Overrep_DCG[i,4] = Pval
+}
+Module_Overrep_DCG
+
+# 
+# sig
+Bta_TF_match_sig = Bta_TF_match %>% 
+  dplyr::filter(OverGene >= 0.4 * Size) #%>% filter(DataBase != "Marbach2016_cr")
+#
+Bta_TF_match_sig %>% group_by(Module) %>% count()
+#names(Bta_TF_match_sig)
+#
+Bta_TF_match_sig_select = Bta_TF_match_sig %>% 
+  dplyr::select(Ensembl_ID) %>% unlist(use.names = F)
+length(Bta_TF_match_sig_select)
+#
+Module_Overrep_TF= data.frame(ModuleName = c(), PreservationStatus = c(),
+                               #ModuleSize = c(),
+                               No.Overlap = c(),
+                               Pvalue = c())
+sig.genes = Bta_TF_match_sig_select
+for (i in seq_along(names(Gene_list_all))){
+  tmp_md = names(Gene_list_all)[i]
+  Module_Overrep_TF[i,1] =  tmp_md
+  Module_Overrep_TF[i,2] = ifelse(tmp_md %in% Mod_Index_NonPre, 'Sig','Not')
+  total.genes =  Gene_all
+  sig.genes = sig.genes
+  gENEs = unlist(Gene_list_all[i]);attributes(gENEs) = NULL
+  N = length(total.genes)
+  S = length(sig.genes) 
+  m = length(total.genes[total.genes %in% gENEs]) # genes from target interpro and in our dataset
+  findG = sig.genes[sig.genes %in% gENEs]
+  s = length(findG) # # genes from target interpro also in the non-preserved module
+  PastefindG = paste(findG, collapse="/")
+  M = matrix(c(s,S-s,m-s,N-m-S+s),byrow = 2, nrow = 2)
+  Pval = round(fisher.test(M, alternative ="g")$p.value,100)
+  Module_Overrep_TF[i,3] = s
+  Module_Overrep_TF[i,4] = Pval
+}
+Module_Overrep_TF
