@@ -690,6 +690,7 @@ save(TRED_cr,
 tf_database_index  = c('TRED_cr','ENCODE_cr','TRRUST_cr','ITFP_cr','SHMM_cr','Marbach2016_cr')
 # 
 
+
 # container: given a module(gene set); search for overlap for each TF in all databases, record the overlap
 library(tidyverse)
 # Data Structure Preperation
@@ -703,12 +704,39 @@ GeneConvert = data.frame(ModuleName = c(),
                          DupCount = c(), # only rm na
                          FinalCount = c()) # rm dup
 # output container
-OUT = OverlapOut = data.frame(DataBase = c(),
-                              TF_Name = c(),
-                              OverNum_Ensl = c(),
-                              OverGene = c(),
-                              Module = c())
+
+#
+special_intersect = function(test_list,
+                             database_list,
+                             pattern = ' /// '){
+  Try_Multi = function(test_list,database_list,pattern = ' /// '){
+    tmp = unlist(str_split(database_list, pattern = pattern))
+    out = intersect(tmp,test_list)
+    return(out)
+  }
+  out_list = intersect(test_list,database_list)
+  Multi_index = grepl(pattern,database_list)
+  Multi_out = database_list[Multi_index]
+  for (i in seq_along(Multi_out)){
+    findone = Try_Multi(test_list,Multi_out[i])
+    out_list = append(out_list,findone,after = length(out_list))
+  }
+  count = length(out_list)
+  return(out_list)
+}
+
+OverlapOut = data.frame(DataBase = c(),
+                        TF_Name = c(),
+                        OverNum_Ensl = c(),
+                        OverGene = c(),
+                        Module = c())
+#p = 1;i = 1 ;j = 1
 for (p in seq_along(Gene_list_all)){
+  OUT =  data.frame(DataBase = c(),
+                    TF_Name = c(),
+                    OverNum_Ensl = c(),
+                    OverGene = c(),
+                    Module = c())
   # convert gene id to symbols
   tmp = (Gene_list_all)[[p]]
   md_name_tmp = names(Gene_list_all)[p]
@@ -718,7 +746,8 @@ for (p in seq_along(Gene_list_all)){
   gene_collection_tmp_raw = symbol_test_bovine_corrected %>% 
     dplyr::filter(ensembl_gene_id %in% tmp) %>% 
     dplyr::select(Suggested.Symbol.Merge) %>% 
-    drop_na() %>% unlist(use.names = F)
+    drop_na() %>% unlist(use.names = F) %>% 
+    .[nchar(.)>0]
   gene_collection_tmp = gene_collection_tmp_raw %>% unique()
   GeneConvert[p,4] = length(gene_collection_tmp_raw)
   GeneConvert[p,5] = length(gene_collection_tmp)
@@ -734,62 +763,55 @@ for (p in seq_along(Gene_list_all)){
     tmp_TF_index = names(get(DB_name))
     for (j in seq_along(tmp_TF_index)){
       tmp_TF_gene_list = get(DB_name)[[j]]
-      out_tmp[i+j-1,1] = DB_name
-      out_tmp[i+j-1,2] = tmp_TF_index[j]
-      special_intersect = function(test_list,
-                                   database_list,
-                                   pattern = ' /// '){
-        Try_Multi = function(test_list,database_list,pattern = ' /// '){
-          tmp = unlist(str_split(database_list, pattern = pattern))
-          out = intersect(tmp,test_list)
-          return(out)
-        }
-        out_list = intersect(test_list,database_list)
-        Multi_index = grepl(pattern,database_list)
-        Multi_out = database_list[Multi_index]
-        for (i in seq_along(Multi_out)){
-          findone = Try_Multi(test_list,Multi_out[i])
-          out_list = append(out_list,findone,after = length(out_list))
-        }
-        count = length(out_list)
-        return(out_list)
-      }
       theoverlap = special_intersect(gene_collection_tmp,tmp_TF_gene_list)
-      out_tmp[i+j-1,3] = length(theoverlap)
-      out_tmp[i+j-1,4] = ifelse(length(theoverlap) == 0,0,length(theoverlap))
-      out_tmp[i+j-1,5] = md_name_tmp
+      # out_tmp[i+j-1,1] = DB_name
+      # out_tmp[i+j-1,2] = tmp_TF_index[j]
+      # out_tmp[i+j-1,3] = length(theoverlap)
+      # out_tmp[i+j-1,4] = ifelse(length(theoverlap) == 0,0,length(theoverlap))
+      # out_tmp[i+j-1,5] = md_name_tmp
+      SingleRecord = data.frame(DataBase = DB_name,
+                                TF_Name = tmp_TF_index[j],
+                                OverNum = length(theoverlap),
+                                OverGene = ifelse(length(theoverlap) == 0,0,length(theoverlap)),
+                                Module = md_name_tmp)
+      out_tmp = rbind(out_tmp,SingleRecord)
       print(c(p,i,j))
     }
     OUT = rbind(OUT,out_tmp)
   }
   OverlapOut = rbind(OverlapOut,OUT)
 }
-
-table(OverlapOut$V5)
-
-head(OverlapOut)
-ModuleSize = data.frame(Module = names(UnPreserved_Gene_list),
-                        Size = sapply(UnPreserved_Gene_list, length))
-
-OverlapOut_final = OverlapOut %>%
-  dplyr::filter(!(V3 == 0)) %>% 
-  drop_na() %>% 
-  rename(Database = V1,
-         TF_Name = V2,
-         Overlap_Count = V3,
-         FindG = V4,
-         Module = V5) %>% 
-  group_by(Module) %>% 
-  mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
-  left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
-  dplyr::filter(Overlap_Count >= 0.3 * Size) %>% 
-  filter(Database != "Marbach2016_cr")
-
-view(OverlapOut_final)
-table(OverlapOut_final$Database)
-
-head(OverlapOut_final)
-dim(OverlapOut_final)
+dim(OverlapOut);head(OverlapOut)
 
 #
-view(OUT_Final)
+library(readxl)
+Bta_TF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 4,startRow = 6) %>% 
+  dplyr::select(Bovine_Class,Ensembl_ID,TF_Symbol) %>% 
+  dplyr::filter(Bovine_Class %in% c('a','b')) %>% 
+  dplyr::filter(!(TF_Symbol %in% c('.'))) %>% 
+  dplyr::select(-Bovine_Class)
+#
+ModuleSize = data.frame(Module = names(UnPreserved_Gene_list),
+                        Size = sapply(UnPreserved_Gene_list, length))
+Bta_TF_match = Bta_TF_raw %>% 
+  right_join(OverlapOut,by = c('TF_Symbol' = 'TF_Name')) %>% 
+  dplyr::filter(!(is.na(Ensembl_ID))) %>% 
+  dplyr::filter(OverNum != 0) %>% 
+  drop_na() %>% 
+  group_by(Module) %>% 
+  mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
+  left_join(ModuleSize, by = c('Module' = 'Module')) 
+Bta_TF_match_sig = Bta_TF_match %>% 
+  dplyr::filter(OverGene >= 0.4 * Size) #%>% filter(DataBase != "Marbach2016_cr")
+
+Bta_TcoF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 5,startRow = 6) %>% 
+  dplyr::select(TcoF_ID,TF_ID,TcoF_Class) %>% 
+  dplyr::filter(TcoF_Class %in% c('High'))
+
+## TF info for different category / pres or non-pres
+
+
+
+
+
+
