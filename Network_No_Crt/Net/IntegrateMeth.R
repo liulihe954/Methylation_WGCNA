@@ -896,13 +896,19 @@ Bta_TF_OverlapMatch = OverlapOut %>%
   #dplyr::filter(OverNum >= 0.1 * Size) %>% 
   dplyr::filter(DataBase != 'Marbach2016_cr')
 
-dim(Bta_TF_OverlapMatch)
-head(Bta_TF_OverlapMatch)
+
+
+test = Bta_TF_OverlapMatch %>% mutate(allprop = OverNum/Size)
+names(table(test$Module)[10])== names(table(ModuleSize$Module)[10])
+test[is.na(test$Size),];plot(sort(test$allprop))
+dim(Bta_TF_OverlapMatch);head(Bta_TF_OverlapMatch)
+
+
 
 Bta_TF_Meth_plot = Bta_TF_OverlapMatch %>% 
   left_join(Bta_TF_Mstatus_final,by = c('TF_Name' = 'Suggested.Symbol.x'))
 head(Bta_TF_Meth_plot)
-dim()
+dim(Bta_TF_Meth_plot)
 
 
 x <- factor(rep(1:10, 100))
