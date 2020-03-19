@@ -646,6 +646,7 @@ check_symbol = function(notsure){
 }
 # out = check_symbol(symbol_test_human$Symbol)
 
+
 # retrive human gene information
 library(org.Hs.eg.db);library(org.Bt.eg.db);library(tidyverse)
 entrezUniverse_human = AnnotationDbi::select(org.Hs.eg.db, 
@@ -656,8 +657,7 @@ entrezUniverse_human = AnnotationDbi::select(org.Hs.eg.db,
 save(entrezUniverse_human,file = 'Human_gene.rda')
 load('Human_gene.rda')
 # find if symbols are official in human database
-library(HGNChelper)
-library(tidyverse)
+library(HGNChelper);library(tidyverse)
 # for human
 symbol_test_human = 
   unique(entrezUniverse_human$SYMBOL) %>% 
@@ -669,8 +669,8 @@ symbol_test_human =
 head(entrezUniverse_human)
 #
 entrezUniverse_human_corrected = entrezUniverse_human %>% 
-  left_join(symbol_test_human,by = c('SYMBOL' = 'Symbol')) %>% 
-  mutate(Suggested.Symbol.Merge = ifelse(is.na(Suggested.Symbol),SYMBOL,Suggested.Symbol))
+  mutate(Suggested.Symbol = check_symbol(SYMBOL)) %>% 
+  dplyr::select(-SYMBOL)
 
 # for bovine
 load('gene_symbols_genome.rda')
@@ -683,8 +683,8 @@ symbol_test_bovine =
   dplyr::select(Symbol,Suggested.Symbol)
 
 symbol_test_bovine_corrected = gene_symbols_genome %>% 
-  left_join(symbol_test_bovine,by = c('external_gene_name' ='Symbol')) %>% 
-  mutate(Suggested.Symbol.Merge = ifelse(is.na(Suggested.Symbol),external_gene_name,Suggested.Symbol))
+  mutate(Suggested.Symbol = check_symbol(external_gene_name)) %>% 
+  dplyr::select(-external_gene_name)
 
 # for database
 # symbol - needs trans
@@ -707,7 +707,7 @@ for (i in seq_along(symbollist)){
   }
   assign(symbollist_out[i],tmp)
 }
-#
+# needs matching
 length(TRED)#etz
 length(ENCODE)#etz
 length(Neph2012)#etz
@@ -726,7 +726,7 @@ for (i in seq_along(entrezlist)){
     entrez = tmp[[p]]
     entrez2symbol_raw = entrezUniverse_human_corrected %>% 
       dplyr::filter(ENTREZID %in% entrez) %>% 
-      dplyr::select(Suggested.Symbol.Merge) %>% 
+      dplyr::select(Suggested.Symbol) %>% 
       unlist(use.names = F)
     entrez2symbol = unique(entrez2symbol_raw)
     #diff[p] = length(entrez2symbol_raw) - length(entrez2symbol)
@@ -760,9 +760,6 @@ GeneConvert = data.frame(ModuleName = c(),
                          GeneCount = c(),
                          DupCount = c(), # only rm na
                          FinalCount = c()) # rm dup
-# output container
-
-
 #
 special_intersect = function(test_list,
                              database_list,
@@ -783,6 +780,7 @@ special_intersect = function(test_list,
   return(out_list)
 }
 
+# output container
 OverlapOut = data.frame(DataBase = c(),
                         TF_Name = c(),
                         OverNum_Ensl = c(),
@@ -803,7 +801,7 @@ for (p in seq_along(Gene_list_all)){
   GeneConvert[p,3] = length(tmp)
   gene_collection_tmp_raw = symbol_test_bovine_corrected %>% 
     dplyr::filter(ensembl_gene_id %in% tmp) %>% 
-    dplyr::select(Suggested.Symbol.Merge) %>% 
+    dplyr::select(Suggested.Symbol) %>% 
     drop_na() %>% unlist(use.names = F) %>% 
     .[nchar(.)>0]
   gene_collection_tmp = gene_collection_tmp_raw %>% unique()
@@ -840,57 +838,99 @@ for (p in seq_along(Gene_list_all)){
   OverlapOut = rbind(OverlapOut,OUT)
 }
 dim(OverlapOut);head(OverlapOut)
+table(OverlapOut$OverNum)
 
 #
 library(readxl)
+# select TF that are (i) high confid (class a/b) (ii) Expressed in Muscle (iii) not necessary to have a official symbol
 Bta_TF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 4,startRow = 6) %>% 
-  dplyr::select(Bovine_Class,Ensembl_ID,TF_Symbol) %>% 
+  dplyr::select(Bovine_Class,Ensembl_ID,TF_Symbol,Tissue_expression) %>% 
   dplyr::filter(Bovine_Class %in% c('a','b')) %>% 
-  dplyr::filter(!(TF_Symbol %in% c('.'))) %>% 
-  dplyr::select(-Bovine_Class)
+  dplyr::filter(str_detect(Tissue_expression,'Muscle',negate = F)) %>% 
+  dplyr::mutate(Suggested.Symbol = check_symbol(TF_Symbol)) %>% 
+  dplyr::mutate(SymbExist = ifelse(TF_Symbol == c('.'),'No','Yes')) %>% 
+  #dplyr::filter(!(TF_Symbol %in% c('.'))) %>% 
+  dplyr::select(-Bovine_Class,-Tissue_expression,-TF_Symbol)
+head(Bta_TF_raw) # resulting 444 itemsBta_TF_raw
+Bta_TF_list = Bta_TF_raw %>% 
+  dplyr::select(Ensembl_ID) %>% unlist(use.names = F) %>% unique()
+length(Bta_TF_list)
+
 # TcoF
 Bta_TcoF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 5,startRow = 6) %>% 
-  dplyr::select(TcoF_ID,TF_ID,TcoF_Class) %>% 
-  dplyr::filter(TcoF_Class %in% c('High'))
+  dplyr::select(TcoF_ID,TF_ID,TcoF_Class,TcoF_tissue_expression) %>% 
+  dplyr::filter(TcoF_Class %in% c('High')) %>% 
+  dplyr::filter(str_detect(TcoF_tissue_expression,'Muscle',negate = F)) %>% 
+  dplyr::filter(TF_ID %in% Bta_TF_raw$Ensembl_ID) %>% 
+  dplyr::select(-TcoF_tissue_expression,-TcoF_Class)
+Bta_TcoF_list = Bta_TcoF_raw %>% 
+  dplyr::select(TcoF_ID) %>% unlist(use.names = F) %>% unique()
+length(Bta_TcoF_list)
+
+Bta_TF_Mstatus_raw = Bta_TF_raw %>% 
+  left_join(Bta_TcoF_raw, by = c('Ensembl_ID' = 'TF_ID')) %>% 
+  left_join(dplyr::select(symbol_test_bovine_corrected,ensembl_gene_id,Suggested.Symbol),
+            by = c('TcoF_ID' = 'ensembl_gene_id')) %>% 
+  left_join(Genes_meth_prop,by = c('Ensembl_ID'='Gene')) %>% 
+  left_join(Genes_meth_prop,by = c('TcoF_ID'='Gene'))
+  
+
+Bta_TF_Mstatus_final = Bta_TF_Mstatus_raw %>%  
+  dplyr::select(-c('Count1.x','Count1.y','Count2.x','Count2.y',
+                   'Count1_all.x','Count1_all.y','Count2_all.x','Count2_all.y',))
+
 
 #
+ModuleName_Unpreserved = names(UnPreserved_Gene_list)
+ModuleName_Preserves = names(Preserved_Gene_list)
 ModuleSize = data.frame(Module = names(Gene_list_all),
                         Size = sapply(Gene_list_all, length))
-Bta_TF_match = Bta_TF_raw %>% 
-  right_join(OverlapOut,by = c('TF_Symbol' = 'TF_Name')) %>% 
-  dplyr::filter(!(is.na(Ensembl_ID))) %>% 
+Overal_match_color = data.frame(Gene = colnames(datExpr_control),
+                                Module = moduleColors_control)
+all_Bta_TF_muscle = as.character(unique(Bta_TF_Mstatus_final$Suggested.Symbol))
+Bta_TF_OverlapMatch = OverlapOut %>% 
+  dplyr::filter(TF_Name %in% all_Bta_TF_muscle) %>% 
+  left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
+  group_by(Module) %>% mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
   dplyr::filter(OverNum != 0) %>% 
-  drop_na() %>% 
-  group_by(Module) %>% 
-  mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
-  left_join(ModuleSize, by = c('Module' = 'Module'))
+  #dplyr::filter(OverNum >= 0.1 * Size) %>% 
+  dplyr::filter(DataBase != 'Marbach2016_cr')
 
-# pre and non-pre
-Bta_TF_match_Unpre = Bta_TF_match %>% dplyr::filter(Pres == 'Unpre') %>% 
-  left_join(Bta_TcoF_raw, by = c('Ensembl_ID' = 'TF_ID'))
-head(Bta_TF_match_Unpre)
-Bta_TF_match_Pre = Bta_TF_match %>% dplyr::filter(Pres == 'Pre') %>% 
-  left_join(Bta_TcoF_raw, by = c('Ensembl_ID' = 'TF_ID'))
-head(Bta_TF_match_Pre)
+dim(Bta_TF_OverlapMatch)
+head(Bta_TF_OverlapMatch)
+
+Bta_TF_Meth_plot = Bta_TF_OverlapMatch %>% 
+  left_join(Bta_TF_Mstatus_final,by = c('TF_Name' = 'Suggested.Symbol.x'))
+head(Bta_TF_Meth_plot)
+dim()
+
+
+x <- factor(rep(1:10, 100))
+y <- rnorm(1000)
+
+x2 <- factor(rep(1:10, 100))
+y2 <- rnorm(1000)
+
+df <- data.frame(x=x, y=y)
+df2 = data.frame(x=x2, y=y2)
+
+
+ggplot() + 
+  geom_boxplot(df, aes(x=x, y=y)) + 
+  geom_boxplot(df2, aes(x=x2, y=y2)) + 
+  stat_summary(fun.y=mean, geom="line", aes(group=1))  + 
+  stat_summary(fun.y=mean, geom="point")
+
+
+
 # sig
 Bta_TF_match_sig = Bta_TF_match %>% 
   dplyr::filter(OverGene >= 0.4 * Size) #%>% filter(DataBase != "Marbach2016_cr")
 
-## Incorporate methylation
-head(Genes_meth_prop)
-Genes_meth_prop_TF_Unpre = Genes_meth_prop %>% 
-  dplyr::select(Gene,Prop_Body,Prop_Prpt,Prop_All) %>% 
-  right_join(Bta_TF_match_Unpre,by = c('Gene' = 'Ensembl_ID')) %>% 
-  drop_na()
-Genes_meth_prop_TF_Pre = Genes_meth_prop %>% 
-  dplyr::select(Gene,Prop_Body,Prop_Prpt,Prop_All) %>% 
-  right_join(Bta_TF_match_Pre,by = c('Gene' = 'Ensembl_ID')) %>% 
-  drop_na()
 #
 Gene_list_all = append(UnPreserved_Gene_list,Preserved_Gene_list)
 ModuleName_Unpreserved = names(UnPreserved_Gene_list)
 ModuleName_Preserves = names(Preserved_Gene_list)
-
 Gene_list_Unpre = c()
 Gene_list_Pre = c()
 for (i in names(UnPreserved_Gene_list)){
@@ -901,26 +941,28 @@ for (i in names(Preserved_Gene_list)){
   tmp = unlist(Preserved_Gene_list[[i]],use.names = F)
   Gene_list_Pre = append(Gene_list_Pre,tmp,length(Gene_list_Pre))
 }
-Gene_list_Unpre_meth = data.frame(Gene = Gene_list_Unpre) %>% 
-  left_join(Genes_meth_prop, by = c('Gene' = 'Gene')) %>% 
-  dplyr::select(Gene,Prop_Body,Prop_Prpt,Prop_All) %>% 
-  drop_na()
-Gene_list_Pre_meth = data.frame(Gene = Gene_list_Pre) %>%  
-  left_join(Genes_meth_prop, by = c('Gene' = 'Gene')) %>% 
-  dplyr::select(Gene,Prop_Body,Prop_Prpt,Prop_All) %>% 
-  drop_na()
 
-a = Genes_meth_prop_TF_Unpre$Prop_All
-b =Genes_meth_prop_TF_Unpre$Prop_Prpt
-c =Genes_meth_prop_TF_Unpre$Prop_Body
-d =Genes_meth_prop_TF_Pre$Prop_All
-e =Genes_meth_prop_TF_Pre$Prop_Prpt
-f =Genes_meth_prop_TF_Pre$Prop_Body
-oo = c()
-ii = letters[1:6]
-for (t in 1:6){
-  oo[t] = mean(get(ii[t]))
-}
+
+
+# a = Genes_meth_prop_TF_Unpre$Prop_All
+# b =Genes_meth_prop_TF_Unpre$Prop_Prpt
+# c =Genes_meth_prop_TF_Unpre$Prop_Body
+# d =Genes_meth_prop_TF_Pre$Prop_All
+# e =Genes_meth_prop_TF_Pre$Prop_Prpt
+# f =Genes_meth_prop_TF_Pre$Prop_Body
+# oo = c()
+# ii = letters[1:6]
+# for (t in 1:6){
+#   oo[t] = mean(get(ii[t]))
+# }
+boxplot(Gene_list_Unpre_meth$Prop_All,
+        Gene_list_Pre_meth$Prop_All,
+        Genes_meth_prop_TF_Unpre$Prop_All,
+        Genes_meth_prop_TF_Unpre$Prop_Prpt,
+        Genes_meth_prop_TF_Unpre$Prop_Body,
+        Genes_meth_prop_TF_Pre$Prop_All,
+        Genes_meth_prop_TF_Pre$Prop_Prpt,
+        Genes_meth_prop_TF_Pre$Prop_Body)
 
 #
 boxplot(Gene_list_Unpre_meth$Prop_All,
