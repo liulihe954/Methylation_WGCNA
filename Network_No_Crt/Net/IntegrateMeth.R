@@ -856,6 +856,9 @@ Bta_TF_list = Bta_TF_raw %>%
   dplyr::select(Ensembl_ID) %>% unlist(use.names = F) %>% unique()
 length(Bta_TF_list)
 
+
+
+
 # TcoF
 Bta_TcoF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 5,startRow = 6) %>% 
   dplyr::select(TcoF_ID,TF_ID,TcoF_Class,TcoF_tissue_expression) %>% 
@@ -873,8 +876,7 @@ Bta_TF_Mstatus_raw = Bta_TF_raw %>%
             by = c('TcoF_ID' = 'ensembl_gene_id')) %>% 
   left_join(Genes_meth_prop,by = c('Ensembl_ID'='Gene')) %>% 
   left_join(Genes_meth_prop,by = c('TcoF_ID'='Gene'))
-  
-
+#
 Bta_TF_Mstatus_final = Bta_TF_Mstatus_raw %>%  
   dplyr::select(-c('Count1.x','Count1.y','Count2.x','Count2.y',
                    'Count1_all.x','Count1_all.y','Count2_all.x','Count2_all.y',))
@@ -888,45 +890,128 @@ ModuleSize = data.frame(Module = names(Gene_list_all),
 Overal_match_color = data.frame(Gene = colnames(datExpr_control),
                                 Module = moduleColors_control)
 all_Bta_TF_muscle = as.character(unique(Bta_TF_Mstatus_final$Suggested.Symbol))
+
 Bta_TF_OverlapMatch = OverlapOut %>% 
   dplyr::filter(TF_Name %in% all_Bta_TF_muscle) %>% 
   left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
-  group_by(Module) %>% mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
+  mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
   dplyr::filter(OverNum != 0) %>% 
-  #dplyr::filter(OverNum >= 0.1 * Size) %>% 
+  #dplyr::filter(OverNum > 1) %>% 
+  group_by(TF_Name) %>% 
+  dplyr::filter(OverNum == max(OverNum)) %>% 
+  sample_n(1) %>% 
+  mutate(OverPerc = OverNum/Size) %>% 
   dplyr::filter(DataBase != 'Marbach2016_cr')
 
+Gene_Traced_all = Genes_meth_prop %>% 
+  dplyr::filter(!(Count1 == 0 & Count1 == 0),Gene %in% Gene_net) %>% 
+  dplyr::select(Gene) %>% 
+  left_join(symbol_test_bovine_corrected,by = c('Gene'='ensembl_gene_id')) %>% 
+  dplyr::select(-ENTREZID)
 
 
-test = Bta_TF_OverlapMatch %>% mutate(allprop = OverNum/Size)
-names(table(test$Module)[10])== names(table(ModuleSize$Module)[10])
-test[is.na(test$Size),];plot(sort(test$allprop))
-dim(Bta_TF_OverlapMatch);head(Bta_TF_OverlapMatch)
+
+Bta_TF_OverlapMatch %>% print(n = Inf)
+
+Bta_TF_OverlapMatch[duplicated(Bta_TF_OverlapMatch$TF_Name),]
+dim(Bta_TF_OverlapMatch)
+
+length((Bta_TF_OverlapMatch$TF_Name))
+length(unique(Bta_TF_OverlapMatch$TF_Name))
+
+TF_Sel_index = 
+  Bta_TF_OverlapMatch %>% #ungroup() %>% 
+  group_by(TF_Name,Pres) %>% mutate(OverSum = sum(OverPerc)) %>% 
+  #filter(TF_Name == 'SP1')%>%
+  print(n = Inf)
+
+  count(Pres) %>% 
+  #dplyr::filter(n == max(n)) %>% 
+    print(n = Inf)
+
+names(Bta_TF_OverlapMatch)
+
+table(Bta_TF_OverlapMatch$Pres)
+table(Bta_TF_OverlapMatch$Module)
 
 
+test = Bta_TF_OverlapMatch %>% 
+  group_by(TF_Name) %>% 
+  slice(1)
+
+Genes_meth_prop_final
+
+test = Genes_meth_prop %>% 
+  left_join(Overal_match_color, by = c('Gene' ='Gene')) %>% 
+  mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
+  filter(Count1 == 0 | Count2 == 0) %>% 
+  filter(Gene %in% Gene_net) %>% 
+  dplyr::select(Gene) %>% unlist(use.names = F)
+
+table(test %in% )
+
+outtestunpre = Genes_meth_prop_final[which(Genes_meth_prop_final$Pres =='Unpre'),]
+outtestpre = Genes_meth_prop_final[which(Genes_meth_prop_final$Pres =='Pre'),]
+boxplot(outtestunpre$Prop_All,
+        outtestpre$Prop_All)
+
+plot(sort(outtestunpre$Prop_Body))
+plot(sort(outtestpre$Prop_Body))
+
+head(Genes_meth_prop)
+
+table(test$Module)
+
+view(test)
+length(test$TF_Name)
+
+table(as.character(Bta_TF_OverlapMatch$TF_Name))
+
+
+length(unique(Bta_TF_OverlapMatch$TF_Name))
+table(Bta_TF_OverlapMatch$Pres)
 
 Bta_TF_Meth_plot = Bta_TF_OverlapMatch %>% 
-  left_join(Bta_TF_Mstatus_final,by = c('TF_Name' = 'Suggested.Symbol.x'))
-head(Bta_TF_Meth_plot)
-dim(Bta_TF_Meth_plot)
+  group_by(TF_Name) %>% 
+  dplyr::filter(OverNum == max(OverNum))
 
+table(Bta_TF_Meth_plot$Pres)
+table(Bta_TF_Meth_plot$Module)
 
-x <- factor(rep(1:10, 100))
+left_join(Bta_TF_Mstatus_final,by = c('TF_Name' = 'Suggested.Symbol.x')) %>% 
+  group_by(TF_Name) %>% 
+  replace_na(list(Prop_All.x = 0, 
+                  Prop_Body.x = 0,
+                  Prop_Prpt.x = 0,
+                  Prop_All.y = 0, 
+                  Prop_Body.y = 0,
+                  Prop_Prpt.y = 0)) %>% 
+  mutate(Prop_All_comb = Prop_All.x + mean(Prop_All.y)) %>% 
+  mutate(Prop_Body_comb = Prop_Body.x + mean(Prop_Body.y)) %>% 
+  mutate(Prop_Prpt_comb = Prop_Prpt.x + mean(Prop_Prpt.y)) %>% 
+  dplyr::select(-c('Prop_All.x','Prop_Body.x','Prop_Prpt.x',
+                   'Prop_All.y','Prop_Body.y','Prop_Prpt.y'))
+Bta_TF_Meth_plot_final = Bta_TF_Meth_plot %>% 
+  group_by(TF_Name) %>%
+  slice(1)
+
+view(Bta_TF_Meth_plot_final)
+
+table(Bta_TF_Meth_plot_final$Pres)
+table(Bta_TF_Meth_plot_final$Module)
+
+x <- facor(rep(1:10, 100))
 y <- rnorm(1000)
-
 x2 <- factor(rep(1:10, 100))
 y2 <- rnorm(1000)
-
 df <- data.frame(x=x, y=y)
 df2 = data.frame(x=x2, y=y2)
-
 
 ggplot() + 
   geom_boxplot(df, aes(x=x, y=y)) + 
   geom_boxplot(df2, aes(x=x2, y=y2)) + 
   stat_summary(fun.y=mean, geom="line", aes(group=1))  + 
   stat_summary(fun.y=mean, geom="point")
-
 
 
 # sig
@@ -949,18 +1034,6 @@ for (i in names(Preserved_Gene_list)){
 }
 
 
-
-# a = Genes_meth_prop_TF_Unpre$Prop_All
-# b =Genes_meth_prop_TF_Unpre$Prop_Prpt
-# c =Genes_meth_prop_TF_Unpre$Prop_Body
-# d =Genes_meth_prop_TF_Pre$Prop_All
-# e =Genes_meth_prop_TF_Pre$Prop_Prpt
-# f =Genes_meth_prop_TF_Pre$Prop_Body
-# oo = c()
-# ii = letters[1:6]
-# for (t in 1:6){
-#   oo[t] = mean(get(ii[t]))
-# }
 boxplot(Gene_list_Unpre_meth$Prop_All,
         Gene_list_Pre_meth$Prop_All,
         Genes_meth_prop_TF_Unpre$Prop_All,
@@ -1142,7 +1215,7 @@ Module_Overrep_TF= data.frame(ModuleName = c(), PreservationStatus = c(),
                                #ModuleSize = c(),
                                No.Overlap = c(),
                                Pvalue = c())
-sig.genes = Bta_TF_match_sig_select
+sig.genes = Bta_TF_list
 for (i in seq_along(names(Gene_list_all))){
   tmp_md = names(Gene_list_all)[i]
   Module_Overrep_TF[i,1] =  tmp_md
