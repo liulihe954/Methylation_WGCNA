@@ -883,7 +883,9 @@ ModuleName_Preserves = names(Preserved_Gene_list)
 ModuleSize = data.frame(Module = names(Gene_list_all),
                         Size = sapply(Gene_list_all, length))
 Overal_match_color = data.frame(Gene = colnames(datExpr_control),
-                                Module = moduleColors_control)
+                                Module = moduleColors_control) %>% 
+  mutate(Cate = ifelse(Module %in% ModuleName_Unpreserved,'Unp','Pre'))
+
 all_Bta_TF_muscle = as.character(unique(Bta_TF_Mstatus_final$Suggested.Symbol.x))
 
 Gene_Traced_all = Genes_meth_prop %>% 
@@ -928,21 +930,80 @@ view(Bta_TF_OverlapMatch_plot)
 names(Bta_TF_OverlapMatch_plot)
 library(ggplot2)
 
-
+#Overall CpG Counts of TF(TcoF) in every module
 ggplot(Bta_TF_OverlapMatch_plot,
-       aes(x = Module,y=(Count1.x + Count2.x),
+       aes(x = Module,
+           y=(Count1.x + Count2.x),
            fill=Pres)) + 
-  geom_boxplot(alpha =.3,width = .3)+
+  geom_boxplot(alpha =.4,width = .2)+
   geom_violin(alpha =.8,width = .8) +
-  facet_wrap(~Pres,scales = 'free')+
-  theme(axis.text.x = element_text(face = "bold",size = 7,
-                                   angle = 45))+
-  
+  facet_wrap(~Pres,scales = 'free',
+             labeller = labeller(Pres = c(Pre = "Preserved", Unpre = "Unpreserved")))+
+  theme(axis.text.x = element_text(face = "bold",size = 7,angle = 45),
+        legend.position = "none")+
+  coord_flip()+
+  xlab("Modules") + ylab("Significant CpG Counts (Total)")
+
+# CpG Counts by large categories
+
+Bta_TF_OverlapMatch_plot_2 = Bta_TF_OverlapMatch_plot %>% 
+  group_by(TF_Name) %>% 
+  dplyr::filter(OverPerc == max(OverPerc)) %>% 
+  dplyr::select(TF_Name,Count1.x,Count2.x,Prop_Body.x,Prop_Prpt.x,Prop_All_Final,Pres)
+
+#Gene_Traced_all
+Bta_TF_Mstatus_final_2 = Bta_TF_Mstatus_final %>% 
+  mutate(Prop_All_Final = ifelse(is.na(Prop_All_wTcoF),Prop_All.x,Prop_All_wTcoF)) %>% 
+  dplyr::select(Suggested.Symbol.x,Count1.x,Count2.x,Prop_Body.x,Prop_Prpt.x,Prop_All_Final) %>% 
+  drop_na() %>% 
+  mutate(Pres = 'All') %>% 
+  rename(TF_Name = Suggested.Symbol.x)
+#
+LargeCate_plot1 = rbind(Bta_TF_OverlapMatch_plot_2,
+                       Bta_TF_Mstatus_final_2)
+#
+ggplot(LargeCate_plot1,
+       aes(x = Pres,y =(Count1.x + Count2.x),fill=Pres))+
+  geom_violin(alpha =.8,width = .8) +
+  xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")
+
+b = ggplot(LargeCate_plot1,
+       aes(x = Pres,y =Prop_All_Final,fill=Pres))+
+  geom_violin(alpha =.8,width = .8) +
+  xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")
+
+#
+# all genes and pre/unpre genes with DNA methy measure
+# surprisingly, variance relates to methylation counts
+Genes_with_Meth = Genes_meth_prop %>% 
+  dplyr::filter(!(Count1 == 0 & Count1 == 0)) %>% 
+  mutate(Cate = 'All')
+
+LargeCate_plot2_raw = Genes_meth_prop %>% 
+  dplyr::filter(!(Count1 == 0 & Count1 == 0),Gene %in% Gene_net) %>% 
+  left_join(dplyr::select(Overal_match_color,Gene,Cate),
+                          by = c('Gene'='Gene'))
+
+LargeCate_plot2 = rbind(LargeCate_plot2_raw,Genes_with_Meth)
+
+
+a = ggplot()+
+  geom_violin(data = LargeCate_plot2,
+              aes(x = Cate,y =Prop_Prpt,fill=Cate))+
+  #geom_flat_violin(position=position_nudge(x=.2)) +
+  #geom_violin(alpha =.8,width = .8) +
+  #geom_boxplot(outlier.alpha = 0.2,outlier.size = 0.3) +
+  xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")+
   coord_flip()
+
+#
+require(ggpubr)
+ggarrange(a,b + rremove("x.text"), 
+          labels = c("A", "B"),
+          ncol = 2)
 
 #Bta_TF_OverlapMatch_plot,aes(x = Module,y=(Count1.x + Count2.x),fill=Pres)
 
-?geom_boxplot()
 
 
 test = Genes_meth_prop %>% 
@@ -983,7 +1044,6 @@ Bta_TF_Meth_plot_final = Bta_TF_Meth_plot %>%
   slice(1)
 
 view(Bta_TF_Meth_plot_final)
-
 table(Bta_TF_Meth_plot_final$Pres)
 table(Bta_TF_Meth_plot_final$Module)
 
@@ -1027,6 +1087,7 @@ boxplot(Gene_list_Unpre_meth$Prop_All,
         Genes_meth_prop_TF_Pre$Prop_All,
         Genes_meth_prop_TF_Pre$Prop_Prpt,
         Genes_meth_prop_TF_Pre$Prop_Body)
+
 
 ######=========================##########
 ##        Hyper G test                ##
