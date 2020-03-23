@@ -40,6 +40,8 @@ test = Msig_Enrich(m_df_all = m_df_all,
 ############################################################
 load("Msig_Enrichment_0124.RData")
 
+#Results_b = Results_b_raw
+
 # get loop index
 all_module = character()
 for (i in seq_along(names(Results_b))){

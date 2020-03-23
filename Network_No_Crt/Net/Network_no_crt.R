@@ -89,6 +89,7 @@ print("Step2 - soft thre plotted and Rdata saved")
 # ref - cl; test - ht
 # dim(datExpr14_ht);dim(datExpr14_cl)
 # Peaerson Cor
+load('AllMatrix.RData')
 adjacency_control = adjacency(datExpr_control,power=softPower_b,type="unsigned");
 diag(adjacency_control)=0
 dissTOM_control = 1-TOMsimilarity(adjacency_control, TOMType="unsigned")

@@ -73,7 +73,6 @@ Total_C_count = Total_C_count_raw %>%
 Total_C_count_2join = Total_C_count %>% 
   dplyr::select(Gene,Count1_all,Count2_all)
 
-
 "/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
 Associ_out_count_final = Associ_out_count %>% 
   dplyr::left_join(Total_C_count_2join,by = c('Gene'= 'Gene')) %>% 
@@ -91,9 +90,6 @@ Genes_meth_prop = Associ_out_count_final %>%
 
 Genes_meth_select = Genes_meth_prop %>% 
   dplyr::filter((Count1 >= 20 | Count2 >= 3)) %>% 
-  # dplyr::filter(Prop_All>= 0.05) %>%
-  # dplyr::filter(Prop_Prpt>= 0.05) %>%
-  # dplyr::filter(Prop_Body>= 0.05) %>%
   dplyr::filter(Prop_Prpt >= quantile(Prop_Prpt,0.4)) %>%
   dplyr::filter(Prop_All >= quantile(Prop_All,0.4)) %>%
   dplyr::filter(Prop_Body >= quantile(Prop_Body,0.4)) %>%
@@ -110,7 +106,6 @@ save(Genes_meth_prop,
      Genes_meth_select,
      Diff_Meth_Gene_index,
      file = 'Genes_meth_prop.rda')
-
 
 ######=========================##########
 ##         2. in module inves         ##
@@ -166,7 +161,6 @@ print(
           legend.position='top', 
           plot.title = element_text(hjust = 0.5)))
 dev.off()
-dim(Diff_Coexp_plot)
 
 #i = 3
 pdf('PDF_Results_NonP_test.pdf')
@@ -324,7 +318,6 @@ ggplot(MP_Stats_nobig, aes(moduleSize,Zsummary.pres,label = Row.names)) +
   geom_abline(intercept = 10,slope=0,colour="darkgreen",linetype="dashed")
 
 # 
-
 Mod_Index_NonPre  = nonpres_modulenames_b[-grep("grey",nonpres_modulenames_b)]
 Mod_Index_Pre = rownames(Z.PreservationStats)[-nonpres_index_b]
 
@@ -875,8 +868,6 @@ Bta_TF_Mstatus_final = Bta_TF_Mstatus_raw %>%
 
 #view(Bta_TF_Mstatus_final)
 
-
-
 #
 ModuleName_Unpreserved = names(UnPreserved_Gene_list)
 ModuleName_Preserves = names(Preserved_Gene_list)
@@ -905,6 +896,7 @@ Bta_TF_OverlapMatch = OverlapOut %>%
   group_by(Module,TF_Name) %>% 
   dplyr::filter(OverPerc == max(OverPerc)) %>% 
   sample_n(1)
+
 #
 Bta_TF_OverlapMatch_plot = Bta_TF_OverlapMatch %>% 
   left_join(Bta_TF_Mstatus_final,by = c('TF_Name'='Suggested.Symbol.x')) %>% 
@@ -967,7 +959,7 @@ ggplot(LargeCate_plot1,
   geom_violin(alpha =.8,width = .8) +
   xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")
 
-b = ggplot(LargeCate_plot1,
+ggplot(LargeCate_plot1,
        aes(x = Pres,y =Prop_All_Final,fill=Pres))+
   geom_violin(alpha =.8,width = .8) +
   xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")
@@ -987,14 +979,14 @@ LargeCate_plot2_raw = Genes_meth_prop %>%
 LargeCate_plot2 = rbind(LargeCate_plot2_raw,Genes_with_Meth)
 
 
-a = ggplot()+
+ggplot()+
   geom_violin(data = LargeCate_plot2,
               aes(x = Cate,y =Prop_Prpt,fill=Cate))+
   #geom_flat_violin(position=position_nudge(x=.2)) +
   #geom_violin(alpha =.8,width = .8) +
   #geom_boxplot(outlier.alpha = 0.2,outlier.size = 0.3) +
-  xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")+
-  coord_flip()
+  xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")
+  #coord_flip()
 
 #
 require(ggpubr)
@@ -1047,8 +1039,6 @@ view(Bta_TF_Meth_plot_final)
 table(Bta_TF_Meth_plot_final$Pres)
 table(Bta_TF_Meth_plot_final$Module)
 
-
-
 # sig
 Bta_TF_match_sig = Bta_TF_match %>% 
   dplyr::filter(OverGene >= 0.4 * Size) #%>% filter(DataBase != "Marbach2016_cr")
@@ -1067,26 +1057,6 @@ for (i in names(Preserved_Gene_list)){
   tmp = unlist(Preserved_Gene_list[[i]],use.names = F)
   Gene_list_Pre = append(Gene_list_Pre,tmp,length(Gene_list_Pre))
 }
-
-
-boxplot(Gene_list_Unpre_meth$Prop_All,
-        Gene_list_Pre_meth$Prop_All,
-        Genes_meth_prop_TF_Unpre$Prop_All,
-        Genes_meth_prop_TF_Unpre$Prop_Prpt,
-        Genes_meth_prop_TF_Unpre$Prop_Body,
-        Genes_meth_prop_TF_Pre$Prop_All,
-        Genes_meth_prop_TF_Pre$Prop_Prpt,
-        Genes_meth_prop_TF_Pre$Prop_Body)
-
-#
-boxplot(Gene_list_Unpre_meth$Prop_All,
-        Gene_list_Pre_meth$Prop_All,
-        Genes_meth_prop_TF_Unpre$Prop_All,
-        Genes_meth_prop_TF_Unpre$Prop_Prpt,
-        Genes_meth_prop_TF_Unpre$Prop_Body,
-        Genes_meth_prop_TF_Pre$Prop_All,
-        Genes_meth_prop_TF_Pre$Prop_Prpt,
-        Genes_meth_prop_TF_Pre$Prop_Body)
 
 
 ######=========================##########
@@ -1238,13 +1208,13 @@ Module_Overrep_DCG
 # 
 # sig
 Bta_TF_match_sig = Bta_TF_match %>% 
-  dplyr::filter(OverGene >= 0.4 * Size) #%>% filter(DataBase != "Marbach2016_cr")
+  dplyr::filter(OverGene >= 0.2 * Size) #%>% filter(DataBase != "Marbach2016_cr")
 #
 Bta_TF_match_sig %>% group_by(Module) %>% count()
 #names(Bta_TF_match_sig)
 #
 Bta_TF_match_sig_select = Bta_TF_match_sig %>% 
-  dplyr::select(Ensembl_ID) %>% unlist(use.names = F)
+  dplyr::select(Ensembl_ID) %>% unlist(use.names = F) %>% unique()
 length(Bta_TF_match_sig_select)
 #
 Module_Overrep_TF= data.frame(ModuleName = c(), PreservationStatus = c(),

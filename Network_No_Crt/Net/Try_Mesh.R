@@ -58,6 +58,7 @@ MESH_Enrichment_1102 = MESH_Enrich(total_genes_all = Total_list_out_entrez,
 ############################################################
 load("MESH_Enrichment_0115.RData")
 # get loop index
+#Mesh_results_b = Mesh_results_b_raw
 all_module = character()
 for (i in seq_along(names(Mesh_results_b))){
   all_module[i] = unlist(strsplit(names(Mesh_results_b)[i]," "))[1]
@@ -73,6 +74,8 @@ for (i in seq_along(all_module)){
   all_mesh_results[[i]] = tmp_results
   names(all_mesh_results)[i] = all_module[i]
 }
+
+
 require(openxlsx)
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/enrich_results")
-write.xlsx(all_mesh_results,file = "Mesh_Results_all_0115.xlsx")
+write.xlsx(all_mesh_results,file = "Mesh_Results_all_0323.xlsx")

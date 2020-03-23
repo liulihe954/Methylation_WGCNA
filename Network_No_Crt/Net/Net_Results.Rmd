@@ -1,0 +1,207 @@
+---
+title: "Net_Results"
+author: "Lihe Liu"
+date: "3/22/2020"
+output: html_document
+---
+## Network
+
+```{r setup, include=FALSE}
+```
+
+1. After filteration, 7034 genes were kept for network modeling (criteria detailed in M&M)
+```{r, include=T}
+dim(datExpr_control);dim(datExpr_treatment)
+```
+
+2. Soft thresholds: raise (abosolute) Pearson correlation to a power thus R square reachs 0.8, 24 was selected. Intuitively, mean connectivity is decreasing. here we prioritized high correlation and 'compress' the net to high density.
+```{r,echo=F}
+plot(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
+     xlab="Soft Threshold (power) control",ylab="Scale Free Topology Model Fit, unsigned R^2 control",type="n",
+     main = paste("Scale independence control"));text(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
+                                                            labels=powers,cex=cex1,col="red");abline(h=0.80,col="red")
+# this line corresponds to using an R^2 cut-off of h
+# Mean connectivity as a function of the soft-thresholding power
+plot(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5],
+     xlab="Soft Threshold (power) control",ylab="Mean Connectivity control",type="n",
+     main = paste("Mean connectivity control"));text(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5], labels=powers, cex=cex1,col="red");abline(h=MeanK_b,col="red")
+```
+
+3. Further, TOM was calculated and 1-TOM was used for clustering.
+```{r, echo=FALSE}
+plotDendroAndColors(geneTree_control, 
+                    dynamicColors_control, 
+                    "Dynamic_Tree_Cut_control_nomg",
+                    dendroLabels = FALSE, hang = 0.03,
+                    addGuide = TRUE, guideHang = 0.05,
+                    main = "Gene dendrogram and module colors control nomg")
+```
+
+4. Modules with high correlated module eigen vector (r > 0.8) will be merged.
+```{r,,echo=F}
+# tree of module Eigengenes
+plot(METree_control, main = "Clustering of module eigengenes control",
+     xlab = "", sub = "")
+## We choose a height cut of 0.2, corresponding to correlation of 0.80, to merge
+MEDissThres = 0.2
+# Plot the cut line into the dendrogram
+abline(h = MEDissThres, col = "red")
+```
+
+5. now we compare  
+```{r echo=F}
+plotDendroAndColors(geneTree_control, moduleLabels_control, "Modules", dendroLabels=F, hang=0.03, addGuide=TRUE,
+                    guideHang=0.05, main="Gene dendrogram and module colors (control)")
+plotDendroAndColors(geneTree_treatment, moduleLabels_control, "Modules", dendroLabels=F,hang=0.03, addGuide=TRUE,
+                    guideHang=0.05, main="Gene dendrogram and module colors (treatment)")
+```
+
+6. Module statistics (with 2000 permutations): 6 unpreserved modules for further investigation
+
+```{r}
+# first 4 columns are summarizing stats (but we might want to report all)
+MP_Stats_final
+```
+
+```{r, echo=F}
+# 
+ggplot(MP_Stats_nobig, aes(moduleSize,medianRank.pres,label = Row.names)) +
+  geom_point(size = 5,aes(colour = Row.names))+
+  geom_text_repel(vjust = -2)+
+  ggtitle("Preservation Median Rank") +
+  xlab("ModuleSize") + ylab("Preservation Median Rank") +
+  theme(plot.title = element_text(hjust = 0.5,size=16, face="bold.italic"),
+        axis.title.x = element_text(size=14, face="bold"),
+        axis.title.y = element_text(size=14, face="bold"))
+
+# Preservation Z summary
+ggplot(MP_Stats_nobig, aes(moduleSize,Zsummary.pres,label = Row.names)) +
+  geom_point(size = 5,aes(colour = Row.names))+
+  geom_text_repel(vjust = -2)+
+  ggtitle("Preservation Zsummary") +
+  xlab("ModuleSize") + ylab("Zsummary") +
+  theme(plot.title = element_text(hjust = 0.5,size=16, face="bold.italic"),
+        axis.title.x = element_text(size=14, face="bold"),
+        axis.title.y = element_text(size=14, face="bold"))+
+  geom_abline(intercept = 0,slope=0,colour="black",linetype="dashed")+
+  geom_abline(intercept = 2,slope=0,colour="blue",linetype="dashed")+
+  geom_abline(intercept = 10,slope=0,colour="darkgreen",linetype="dashed")
+
+```
+
+7. Functionaly characterization (enrichment)
+```{r}
+# GO, KEGG, Interpro, Reactome, MeSH, MsigDB
+# Compressed in another zip
+# which kind of plot we need?
+```
+
+## DNA Methylation  
+
+1. match region:  
+
+* 25491 genes has CpG detected (flagging)  
+* 8817 genes has **signif CpG** detected in all regions (define: 20% methy and qval < 0.1)  
+* **However**, only **7994** genes were captured in RNA-Seq and **3326** were included in network analysis (**tough loss**, potentially problematic)  
+
+```{r}
+Genes_meth_prop %>% 
+  dplyr::filter(!(Count1 == 0 & Count1 == 0),Gene %in% Gene_all) %>% dim()
+#
+Genes_meth_prop %>% 
+  dplyr::filter(!(Count1 == 0 & Count1 == 0),Gene %in% Gene_net) %>% dim()
+#
+head(Total_C_count) # dataset example
+```
+
+2. Question 2: Are genes in unpreserved modules more methylated that those preserved (all represents all methylation information we captured)  
+* Unfortunatelly, only 414 genes in all unpreserved modules are included, but we can still learn something.
+```{r}
+ggplot()+
+  geom_violin(data = LargeCate_plot2,
+              aes(x = Cate,y =Prop_Prpt,fill=Cate))+
+  #geom_flat_violin(position=position_nudge(x=.2)) +
+  #geom_violin(alpha =.8,width = .8) +
+  #geom_boxplot(outlier.alpha = 0.2,outlier.size = 0.3) +
+  xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")
+ 
+```
+
+3. Question 2: In a given module, are those genes with high connectivity (hub) get more chances to be methylated?
+
+```{r}
+# show PDF
+```
+
+4. Question 3: Is there any enrichment of the differentially methylated genes? (will explain later in the Hyper G section)
+
+```{r}
+
+```
+
+
+## Transciption Factor Analysis  
+
+* 444 (muscle) tissue-specific transcription factor (TF) retrieved  
+* 147 trans Cofactor (TcoF) retrieved (based on know interactions above TF)  
+* Human databased integrated: only 331 with activites recorded while **only** 68 TF with methylation (**tough loss again!**)
+* another problem: most of them are controlling **preserved** modules and **unpreserved** mdules at the same time, thus it's not easy to differentiate. i.e. The TFs targeting a nonpreserved module are targeting a preserved module at the same time.  
+* Forcely, assign a TF to a module, if it has the highest percetage of genes in the module (targeting gene / all genes in the module). i.e., FLI1 are targeting 20% of module A (preserved) while targeting 25% of module B (Unpreserved), we take FLI1 as responsible for the unpreserved module A.  
+
+```{r}
+length(unique(Bta_TF_OverlapMatch$TF_Name))
+```
+
+1. Are the Methylation status of TFs of each module the same? (Unpreserved > preserved)
+
+```{r}
+#Overall CpG Counts of TF(TcoF) in every module
+ggplot(Bta_TF_OverlapMatch_plot,
+       aes(x = Module,
+           y=(Count1.x + Count2.x),
+           fill=Pres)) + 
+  geom_boxplot(alpha =.4,width = .2)+
+  geom_violin(alpha =.8,width = .8) +
+  facet_wrap(~Pres,scales = 'free',
+             labeller = labeller(Pres = c(Pre = "Preserved", Unpre = "Unpreserved")))+
+  theme(axis.text.x = element_text(face = "bold",size = 7,angle = 45),
+        legend.position = "none")+
+  coord_flip()+
+  xlab("Modules") + ylab("Significant CpG Counts (Total)")
+```
+
+2. Are the Methylation status of TFs responsible for unpreserved/preserved modules the same? (Unpreserved > preserved) (All represents all bovine TFs methylation captured)
+
+```{r}
+ggplot(LargeCate_plot1,
+       aes(x = Pres,y =Prop_All_Final,fill=Pres))+
+  geom_violin(alpha =.8,width = .8) +
+  xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")
+```
+
+
+
+## Hyper G test  
+we defined some gene list in the process:
+1. Top 20% Differentially co-expressed genes: length-wise distance of adjacency vector (784 genes)  
+2. Differentially methylated genes: (261) - Define
+3. TF targeting many genes in any of the modules (say more than 20%) (225)
+
+```{r}
+# Diff meth
+Module_Overrep
+
+# Diff TF
+Module_Overrep_TF
+
+# DCG
+Module_Overrep_DCG
+```
+
+
+## Thoughts
+
+1. lost of info is a problem, every layer is eating data
+2. last part does not really make sense
+3. Cant's explain myself? not convincing? 
+4. what else we could do?

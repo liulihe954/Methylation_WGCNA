@@ -34,8 +34,10 @@ Interpro_Enrich_Results_thres005_1102 =
 ############################################################
 ### =======             Interpro               ========== ##
 ############################################################
+setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net')
 load("Interpro_Enrichment_0113.RData")
 
+#Interpro_results_b = Interpro_results_b_raw
 # get loop index
 all_module = character()
 for (i in seq_along(names(Interpro_results_b))){
