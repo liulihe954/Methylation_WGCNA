@@ -1,5 +1,5 @@
 ######=========================##########
-##            Data Pre                 ##
+##           0. Data Pre               ##
 ######=========================##########
 Pwd = getwd()
 setwd('/Users/liulihe95/Desktop/Methionine')
@@ -17,9 +17,9 @@ load("Ensembl2Entrez_Convert.RData")
 load('network_final.RData')
 #load('MethEval_all.RData')
 
-
-# counted ALL Cs 
-# measure meth level
+######=========================##########
+##         1. counted ALL Cs           ##
+######=========================##########
 # run rgmatch find the Diff C location/ gene assignments
 ## ================================================================================================================== ##
 #     python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b Diff_C_Sig_BED.bed -r 'gene' -q 4 -o myassociations.txt    ##
@@ -29,18 +29,11 @@ setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net')
 #setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch')
 # Associ_out_raw = read.table('myassoci_exon_5.5k_ext.txt',sep = '\t') %>% data.frame()
 library(readxl)
-Associ_out_raw = read_xlsx('DiffC_Gene.xlsx') %>% dplyr::filter(Gene != "-") %>% 
-  rename(Area=Region)
-#%>% dplyr::filter(Region != 'DOWNSTREAM')
-#setwd(Data_loci)
+library(tidyverse)
 
-### massage diff C associated gene
-# cname =as.character(unlist(Associ_out_raw[1,]));attributes(cname) = NULL
-# colnames(Associ_out_raw) = cname
-# Associ_out_raw = Associ_out_raw[-1,]
-
-#
-
+Associ_out_raw = read.table('myassociations_new_0319.txt',header = TRUE,stringsAsFactors = FALSE ) %>% 
+  dplyr::filter(Gene != "-",Area != 'DOWNSTREAM') %>% 
+  dplyr::select(Gene,Area)
 ####
 # custom function to transpose while preserving names
 transpose_df <- function(df) {
@@ -55,6 +48,7 @@ transpose_df <- function(df) {
     `rownames<-`(NULL)
   return(t_df)
 }
+
 #head(Associ_out,100) %>% print(n = Inf)
 Associ_out =  Associ_out_raw %>% 
   #dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
@@ -68,25 +62,17 @@ Associ_out =  Associ_out_raw %>%
 
 Associ_out_count = Associ_out %>% 
   mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
-  mutate(Count2 = PROMOTER + TSS + UPSTREAM)
+  mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
+  dplyr::select(Gene,Count1,Count2)
 
-
-# count all Cs using self-wraped function: AGCTcount (getSEQ from biomart mainly)
-
-
-# load('Genes_C_count_all_Final_api.RData')
-# head(Genes_C_count_all_api)
-# Genes_C_count_all = Genes_C_count_all_api %>% 
-#   rename(Gene = V1, Total_CG = V2,Prom_CG = V3) %>% 
-#   mutate_at(vars(Total_CG,Prom_CG),as.numeric) %>% 
-#   replace(is.na(.), 0)
-
+#
 load('Total_C_count_raw.rda')
 Total_C_count = Total_C_count_raw %>% 
   mutate(Count1_all = `1st_EXON`+ GENE_BODY + INTRON) %>% 
   mutate(Count2_all = PROMOTER + TSS + UPSTREAM)
 Total_C_count_2join = Total_C_count %>% 
   dplyr::select(Gene,Count1_all,Count2_all)
+
 
 "/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
 Associ_out_count_final = Associ_out_count %>% 
@@ -96,15 +82,12 @@ Associ_out_count_final = Associ_out_count %>%
   mutate(Prop_Prpt = Count2/Count2_all) %>% 
   mutate(Prop_All = (Count1+Count2)/(Count1_all+Count2_all))
 
-
 # Count1 = 1st_EXON+ GENE_BODY + INTRON
 # Count2 = PROMOTER + TSS + UPSTREAM
 Genes_meth_prop = Associ_out_count_final %>% 
   dplyr::filter(!is.na(Prop_Body) & Prop_Body <=1) %>% 
   dplyr::filter(!is.na(Prop_Prpt) & Prop_Prpt <=1) %>% 
   dplyr::filter(!is.na(Prop_All) & Prop_All <=1)
-
-sort(Genes_meth_prop$Prop_Prpt,decreasing = T)
 
 Genes_meth_select = Genes_meth_prop %>% 
   dplyr::filter((Count1 >= 20 | Count2 >= 3)) %>% 
@@ -118,6 +101,7 @@ Genes_meth_select = Genes_meth_prop %>%
   dplyr::filter(Prop_All != 0) %>%
   dplyr::filter(Prop_Body != 0) %>%
   arrange(Prop_All)
+
 Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
 length(Diff_Meth_Gene_index)
 
@@ -127,6 +111,10 @@ save(Genes_meth_prop,
      Diff_Meth_Gene_index,
      file = 'Genes_meth_prop.rda')
 
+
+######=========================##########
+##         2. in module inves         ##
+######=========================##########
 # Gather Info: KME and Meth
 load('Genes_meth_prop.rda')
 datKME_tmp = signedKME(datExpr_control, MEs_control)
@@ -136,10 +124,6 @@ datKME = datKME_tmp %>%
   dplyr::mutate(MdouleAssign = moduleColors_control) %>% 
   dplyr::left_join(Genes_meth_prop, by= c("Gene" = "Gene"))
 
-
-######=========================##########
-##            Index Pre                ##
-######=========================##########
 ref=1; test = 2
 Z.PreservationStats=mp$preservation$Z[[ref]][[test]]
 Zsummary=Z.PreservationStats$Zsummary.pres
@@ -256,8 +240,8 @@ for (i in seq_along(Mod_Index_Pre)){
 dev.off()
 
 ######=========================##########
-##        Hyper G test                ##
-######========================##########
+##         3 Hper G test              ##
+######=========================##########
 setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 
 # library(biomaRt)
@@ -367,7 +351,6 @@ save(UnPreserved_Gene_list,
 ##
 load('Gene_list_by_module.rda')
 
-names(Preserved_Gene_list)
 # genes captured in all category
 Gene_all = unique(rownames(networkData_normalized))
 Gene_net = unique(rownames(networkData_50var_nocrt))
@@ -379,7 +362,6 @@ Gene_grey = datKME %>%
 
 
 # Define differentially methylated genes
-
 Genes_meth_select = Genes_meth_prop %>% 
   dplyr::filter((Count1 >= 20 | Count2 >= 3)) %>% 
   # dplyr::filter(Prop_All>= 0.05) %>%
@@ -628,6 +610,10 @@ for (i in 1:14){
   print(x)
 }
 
+######=========================##########
+##        4. Transcription factor     ##
+######=========================##########
+
 # devtools::install_github("slowkow/tftargets")
 library(tftargets)
 #detach("package:tftargets", unload=TRUE)
@@ -656,6 +642,7 @@ entrezUniverse_human = AnnotationDbi::select(org.Hs.eg.db,
   dplyr::distinct(ENSEMBL,.keep_all= TRUE)
 save(entrezUniverse_human,file = 'Human_gene.rda')
 load('Human_gene.rda')
+
 # find if symbols are official in human database
 library(HGNChelper);library(tidyverse)
 # for human
@@ -842,6 +829,7 @@ table(OverlapOut$OverNum)
 
 #
 library(readxl)
+library(openxlsx)
 # select TF that are (i) high confid (class a/b) (ii) Expressed in Muscle (iii) not necessary to have a official symbol
 Bta_TF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 4,startRow = 6) %>% 
   dplyr::select(Bovine_Class,Ensembl_ID,TF_Symbol,Tissue_expression) %>% 
@@ -852,11 +840,10 @@ Bta_TF_raw = read.xlsx('Bta_TF_list.xlsx',sheet = 4,startRow = 6) %>%
   #dplyr::filter(!(TF_Symbol %in% c('.'))) %>% 
   dplyr::select(-Bovine_Class,-Tissue_expression,-TF_Symbol)
 head(Bta_TF_raw) # resulting 444 itemsBta_TF_raw
+
 Bta_TF_list = Bta_TF_raw %>% 
   dplyr::select(Ensembl_ID) %>% unlist(use.names = F) %>% unique()
 length(Bta_TF_list)
-
-
 
 
 # TcoF
@@ -878,8 +865,16 @@ Bta_TF_Mstatus_raw = Bta_TF_raw %>%
   left_join(Genes_meth_prop,by = c('TcoF_ID'='Gene'))
 #
 Bta_TF_Mstatus_final = Bta_TF_Mstatus_raw %>%  
-  dplyr::select(-c('Count1.x','Count1.y','Count2.x','Count2.y',
-                   'Count1_all.x','Count1_all.y','Count2_all.x','Count2_all.y',))
+  dplyr::select(-c('Count1.y','Count2.y',
+                   'Count1_all.x','Count1_all.y','Count2_all.x','Count2_all.y',)) %>% 
+  group_by(Suggested.Symbol.x) %>% 
+  mutate(TcoF_meth = mean(Prop_All.y)) %>% 
+  dplyr::select(-Prop_Body.y,-Prop_Prpt.y,-Prop_All.y,-SymbExist,-TcoF_ID,-Suggested.Symbol.y) %>% 
+  sample_n(1) %>% 
+  mutate(Prop_All_wTcoF = ifelse(is.na(Prop_All.x),TcoF_meth,TcoF_meth + Prop_All.x))
+
+#view(Bta_TF_Mstatus_final)
+
 
 
 #
@@ -889,19 +884,7 @@ ModuleSize = data.frame(Module = names(Gene_list_all),
                         Size = sapply(Gene_list_all, length))
 Overal_match_color = data.frame(Gene = colnames(datExpr_control),
                                 Module = moduleColors_control)
-all_Bta_TF_muscle = as.character(unique(Bta_TF_Mstatus_final$Suggested.Symbol))
-
-Bta_TF_OverlapMatch = OverlapOut %>% 
-  dplyr::filter(TF_Name %in% all_Bta_TF_muscle) %>% 
-  left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
-  mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
-  dplyr::filter(OverNum != 0) %>% 
-  #dplyr::filter(OverNum > 1) %>% 
-  group_by(TF_Name) %>% 
-  dplyr::filter(OverNum == max(OverNum)) %>% 
-  sample_n(1) %>% 
-  mutate(OverPerc = OverNum/Size) %>% 
-  dplyr::filter(DataBase != 'Marbach2016_cr')
+all_Bta_TF_muscle = as.character(unique(Bta_TF_Mstatus_final$Suggested.Symbol.x))
 
 Gene_Traced_all = Genes_meth_prop %>% 
   dplyr::filter(!(Count1 == 0 & Count1 == 0),Gene %in% Gene_net) %>% 
@@ -909,37 +892,58 @@ Gene_Traced_all = Genes_meth_prop %>%
   left_join(symbol_test_bovine_corrected,by = c('Gene'='ensembl_gene_id')) %>% 
   dplyr::select(-ENTREZID)
 
+Bta_TF_OverlapMatch = OverlapOut %>% 
+  dplyr::filter(OverNum != 0) %>%
+  dplyr::filter(TF_Name %in% all_Bta_TF_muscle) %>% 
+  dplyr::filter(TF_Name %in% Gene_Traced_all$Suggested.Symbol) %>%
+  dplyr::filter(!(TF_Name %in% 'Grey')) %>% 
+  left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
+  mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
+  mutate(OverPerc = OverNum/Size) %>%
+  group_by(Module,TF_Name) %>% 
+  dplyr::filter(OverPerc == max(OverPerc)) %>% 
+  sample_n(1)
+#
+Bta_TF_OverlapMatch_plot = Bta_TF_OverlapMatch %>% 
+  left_join(Bta_TF_Mstatus_final,by = c('TF_Name'='Suggested.Symbol.x')) %>% 
+  mutate(Prop_All_Final = ifelse(is.na(Prop_All_wTcoF),Prop_All.x,Prop_All_wTcoF))
+# reorder
+reindex = c(which(Bta_TF_OverlapMatch_plot$Pres == 'Pre'),which(Bta_TF_OverlapMatch_plot$Pres == 'Unpre'))
+Bta_TF_OverlapMatch_plot =Bta_TF_OverlapMatch_plot[reindex,]
+Bta_TF_OverlapMatch_plot$Module = factor(Bta_TF_OverlapMatch_plot$Module,
+                                         levels = c(ModuleName_Unpreserved,ModuleName_Preserves))
+
+# melt
+library(reshape2)
+Bta_TF_OverlapMatch_plot.m =
+  melt(Bta_TF_OverlapMatch_plot,
+       id.vars='TF_Name', 
+       measure.vars=c('Count1.x','Count2.x')) %>% 
+  left_join(Bta_TF_OverlapMatch_plot,by = c('TF_Name'='TF_Name'))
+
+dim(Bta_TF_OverlapMatch_plot.m)
+
+class(Bta_TF_OverlapMatch_plot$Module)
+view(Bta_TF_OverlapMatch_plot)
+names(Bta_TF_OverlapMatch_plot)
+library(ggplot2)
 
 
-Bta_TF_OverlapMatch %>% print(n = Inf)
+ggplot(Bta_TF_OverlapMatch_plot,
+       aes(x = Module,y=(Count1.x + Count2.x),
+           fill=Pres)) + 
+  geom_boxplot(alpha =.3,width = .3)+
+  geom_violin(alpha =.8,width = .8) +
+  facet_wrap(~Pres,scales = 'free')+
+  theme(axis.text.x = element_text(face = "bold",size = 7,
+                                   angle = 45))+
+  
+  coord_flip()
 
-Bta_TF_OverlapMatch[duplicated(Bta_TF_OverlapMatch$TF_Name),]
-dim(Bta_TF_OverlapMatch)
+#Bta_TF_OverlapMatch_plot,aes(x = Module,y=(Count1.x + Count2.x),fill=Pres)
 
-length((Bta_TF_OverlapMatch$TF_Name))
-length(unique(Bta_TF_OverlapMatch$TF_Name))
+?geom_boxplot()
 
-TF_Sel_index = 
-  Bta_TF_OverlapMatch %>% #ungroup() %>% 
-  group_by(TF_Name,Pres) %>% mutate(OverSum = sum(OverPerc)) %>% 
-  #filter(TF_Name == 'SP1')%>%
-  print(n = Inf)
-
-  count(Pres) %>% 
-  #dplyr::filter(n == max(n)) %>% 
-    print(n = Inf)
-
-names(Bta_TF_OverlapMatch)
-
-table(Bta_TF_OverlapMatch$Pres)
-table(Bta_TF_OverlapMatch$Module)
-
-
-test = Bta_TF_OverlapMatch %>% 
-  group_by(TF_Name) %>% 
-  slice(1)
-
-Genes_meth_prop_final
 
 test = Genes_meth_prop %>% 
   left_join(Overal_match_color, by = c('Gene' ='Gene')) %>% 
@@ -948,28 +952,11 @@ test = Genes_meth_prop %>%
   filter(Gene %in% Gene_net) %>% 
   dplyr::select(Gene) %>% unlist(use.names = F)
 
-table(test %in% )
-
 outtestunpre = Genes_meth_prop_final[which(Genes_meth_prop_final$Pres =='Unpre'),]
 outtestpre = Genes_meth_prop_final[which(Genes_meth_prop_final$Pres =='Pre'),]
 boxplot(outtestunpre$Prop_All,
         outtestpre$Prop_All)
 
-plot(sort(outtestunpre$Prop_Body))
-plot(sort(outtestpre$Prop_Body))
-
-head(Genes_meth_prop)
-
-table(test$Module)
-
-view(test)
-length(test$TF_Name)
-
-table(as.character(Bta_TF_OverlapMatch$TF_Name))
-
-
-length(unique(Bta_TF_OverlapMatch$TF_Name))
-table(Bta_TF_OverlapMatch$Pres)
 
 Bta_TF_Meth_plot = Bta_TF_OverlapMatch %>% 
   group_by(TF_Name) %>% 
@@ -1000,18 +987,6 @@ view(Bta_TF_Meth_plot_final)
 table(Bta_TF_Meth_plot_final$Pres)
 table(Bta_TF_Meth_plot_final$Module)
 
-x <- facor(rep(1:10, 100))
-y <- rnorm(1000)
-x2 <- factor(rep(1:10, 100))
-y2 <- rnorm(1000)
-df <- data.frame(x=x, y=y)
-df2 = data.frame(x=x2, y=y2)
-
-ggplot() + 
-  geom_boxplot(df, aes(x=x, y=y)) + 
-  geom_boxplot(df2, aes(x=x2, y=y2)) + 
-  stat_summary(fun.y=mean, geom="line", aes(group=1))  + 
-  stat_summary(fun.y=mean, geom="point")
 
 
 # sig

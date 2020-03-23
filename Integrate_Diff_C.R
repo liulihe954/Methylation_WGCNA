@@ -29,6 +29,10 @@ rgmatch_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net
 setwd(rgmatch_loci)
 write.table(Diff_C_Sig_BED, file='Diff_C_Sig_BED.bed', row.names = F,quote=FALSE, sep='\t')
 setwd(data_loci)
+## ================================================================================================================== ##
+#   python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b Diff_C_Sig_BED.bed -r 'exon' -q 4 -o myassociations_new.txt  ##
+## ================================================================================================================== ##
+
 
 
 #Count all Cs
@@ -48,7 +52,7 @@ rgmatch_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net
 setwd(rgmatch_loci)
 write.table(SeqC_all_BED, file='SeqC_all_BED.bed', row.names = F,quote=FALSE, sep='\t')
 ## ================================================================================================================== ##
-#     python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b SeqC_all_BED.bed -r 'exon' -q 4 -o myassociations_all_C.txt    ##
+#     python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b SeqC_all_BED.bed -r 'exon' -q 4 -o myassociations_all_C.txt ##
 ## ================================================================================================================== ##
 
 
