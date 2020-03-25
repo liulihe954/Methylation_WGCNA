@@ -131,6 +131,8 @@ ggplot()+
 
 ```{r}
 # show PDF
+# scaled con vs dna methy prop
+
 ```
 
 4. Question 3: Is there any enrichment of the differentially methylated genes? (will explain later in the Hyper G section)
@@ -177,6 +179,10 @@ ggplot(LargeCate_plot1,
        aes(x = Pres,y =Prop_All_Final,fill=Pres))+
   geom_violin(alpha =.8,width = .8) +
   xlab("Module Preservation") + ylab("Prop_ALL (with TcoF)")
+
+
+# within modules find TFs; plot methy of TF (Pre vs Unpre); plot all TFs (baseline)
+
 ```
 
 
