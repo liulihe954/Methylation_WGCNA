@@ -63,11 +63,11 @@ write.xlsx(all_go_results,file = "GO_Results_all_0113.xlsx")
 
 ###
 # setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/enrich_results")
-# pdf("GO_Enriche_Semantic_Sim.pdf")
+# pdf("GO_Enriche_Semantic_Sim_0.001.pdf")
 # for (m in seq_along(all_go_results)){
 #   tmp_out = data.frame(all_go_results[[i]])
 #   ReduceDim_GO_Plot(tmp_out,
-#                     GOthres = 0.05,
+#                     GOthres = 0.001,
 #                     label_sizeCC = 0.4,
 #                     label_sizeBP = 0.4,
 #                     label_sizeMF = 0.4,
@@ -77,7 +77,6 @@ write.xlsx(all_go_results,file = "GO_Results_all_0113.xlsx")
 # }
 # dev.off()
 # setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA")
-
 
 
 

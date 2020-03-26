@@ -30,11 +30,6 @@ setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net')
 # Associ_out_raw = read.table('myassoci_exon_5.5k_ext.txt',sep = '\t') %>% data.frame()
 library(readxl)
 library(tidyverse)
-
-Associ_out_raw = read.table('myassociations_new_0319.txt',header = TRUE,stringsAsFactors = FALSE ) %>% 
-  dplyr::filter(Gene != "-",Area != 'DOWNSTREAM') %>% 
-  dplyr::select(Gene,Area)
-####
 # custom function to transpose while preserving names
 transpose_df <- function(df) {
   t_df <- data.table::transpose(df)
@@ -48,6 +43,57 @@ transpose_df <- function(df) {
     `rownames<-`(NULL)
   return(t_df)
 }
+# #
+# Associ_out_all_raw = read.table('myassociations_all.txt',header = TRUE,stringsAsFactors = FALSE)
+# Associ_out_sig_raw = read.table('myassociations_sig.txt',header = TRUE,stringsAsFactors = FALSE)
+# #
+# Associ_out_all = Associ_out_all_raw %>%
+#   dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
+#   group_by(Gene) %>%
+#   dplyr::count(Area) %>%
+#   tidyr::spread(key = Gene, value = n) %>%
+#   transpose_df() %>%
+#   replace(is.na(.), 0) %>%
+#   mutate_at(vars(-Area), as.numeric) %>%
+#   dplyr::rename(Gene = Area) %>% # 24344
+#   mutate(Count_Prpt =  PROMOTER + TSS + UPSTREAM) %>%
+#   mutate(Count_Body =  `1st_EXON`+ GENE_BODY + INTRON) %>%
+#   mutate(Count_All = Count_Prpt + Count_Body) %>%
+#   dplyr::select(Gene,Count_Prpt,Count_Body,Count_All)
+# 
+# Associ_out_sig = Associ_out_sig_raw %>%
+#   dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
+#   group_by(Gene) %>%
+#   dplyr::count(Area) %>%
+#   tidyr::spread(key = Gene, value = n) %>%
+#   transpose_df() %>%
+#   replace(is.na(.), 0) %>%
+#   mutate_at(vars(-Area), as.numeric) %>%
+#   dplyr::rename(Gene = Area) %>% # 10247
+#   mutate(Count_Prpt =  PROMOTER + TSS + UPSTREAM) %>%
+#   mutate(Count_Body =  `1st_EXON`+ GENE_BODY + INTRON) %>%
+#   mutate(Count_All = Count_Prpt + Count_Body) %>%
+#   dplyr::select(Gene,Count_Prpt,Count_Body,Count_All)
+# #
+# "/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y))
+# Meth_Prop_Univ = Associ_out_all %>%
+#   left_join(Associ_out_sig, by = c('Gene' = 'Gene')) %>%
+#   replace_na(list(Count_Prpt.y = 0,Count_Body.y = 0,Count_All.y = 0)) %>%
+#   mutate(Prop_Prpt = Count_Prpt.y/Count_Prpt.x,
+#          Prop_Body = Count_Body.y/Count_Body.x,
+#          Prop_All = Count_All.y/Count_All.x) %>%
+#   dplyr::select(Gene,Count_Prpt.y,Count_Body.y,Count_All.y,Prop_Prpt,Prop_Body,Prop_All)
+# #
+# Meth_Prop_Univ %>%
+#   dplyr::filter(Prop_Prpt ==0,
+#                 Prop_Body==0,
+#                 Prop_All ==0) %>% dim() # 8884
+# #
+# save(Associ_out_all,Associ_out_sig,Meth_Prop_Univ,file = 'Meth_Prop_Univ.rda')
+
+Associ_out_raw = read.table('myassociations_new_0319.txt',header = TRUE,stringsAsFactors = FALSE ) %>% 
+  dplyr::filter(Area != 'DOWNSTREAM') #%>% 
+  dplyr::select(Gene,Area)
 
 #head(Associ_out,100) %>% print(n = Inf)
 Associ_out =  Associ_out_raw %>% 
@@ -73,6 +119,11 @@ Total_C_count = Total_C_count_raw %>%
 Total_C_count_2join = Total_C_count %>% 
   dplyr::select(Gene,Count1_all,Count2_all)
 
+head(Total_C_count_raw)
+dim(Total_C_count_raw)
+
+
+
 "/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
 Associ_out_count_final = Associ_out_count %>% 
   dplyr::left_join(Total_C_count_2join,by = c('Gene'= 'Gene')) %>% 
@@ -80,6 +131,7 @@ Associ_out_count_final = Associ_out_count %>%
   mutate(Prop_Body = Count1/Count1_all) %>% 
   mutate(Prop_Prpt = Count2/Count2_all) %>% 
   mutate(Prop_All = (Count1+Count2)/(Count1_all+Count2_all))
+
 
 # Count1 = 1st_EXON+ GENE_BODY + INTRON
 # Count2 = PROMOTER + TSS + UPSTREAM
@@ -111,14 +163,31 @@ save(Genes_meth_prop,
 ##         2. in module inves         ##
 ######=========================##########
 # Gather Info: KME and Meth
-load('Genes_meth_prop.rda')
+load('Meth_Prop_Univ.rda')
+Genes_meth_prop = Meth_Prop_Univ %>% 
+  rename(Count_Prpt = Count_Prpt.y,
+         Count_Body = Count_Body.y,
+         Count_All = Count_All.y)
+
+table(Gene_net %in% Meth_Prop_Univ$Gene) # lost 299
+table(Gene_all %in% Meth_Prop_Univ$Gene) # lost 1722
+#length(Gene_all) # 20479
+inMod_con = intramodularConnectivity(adjacency_control,
+                                     moduleColors_control,
+                                     scaleByMax = T) %>% 
+  dplyr::select(-kOut,-kDiff)
+inMod_con$Gene = rownames(inMod_con)
+head(inMod_con)
+
 datKME_tmp = signedKME(datExpr_control, MEs_control)
 '/' <- base:::"/"
 datKME = datKME_tmp %>% 
   dplyr::mutate(Gene = rownames(datKME_tmp)) %>% 
   dplyr::mutate(MdouleAssign = moduleColors_control) %>% 
-  dplyr::left_join(Genes_meth_prop, by= c("Gene" = "Gene"))
+  dplyr::left_join(Genes_meth_prop, by= c("Gene" = "Gene")) %>% 
+  dplyr::left_join(inMod_con,by = c('Gene' = 'Gene'))
 
+#
 ref=1; test = 2
 Z.PreservationStats=mp$preservation$Z[[ref]][[test]]
 Zsummary=Z.PreservationStats$Zsummary.pres
@@ -137,6 +206,9 @@ Mod_Index_Pre = Mod_Index_Pre[-grep('gold',Mod_Index_Pre)]
 library(DCGL)
 test = DCGL::WGCNA((t(datExpr_control)),(t(datExpr_treatment)),
                    power = 24, variant = "DCp")
+
+head(Genes_meth_prop)
+
 Diff_Coexp = data.frame(Gene = names(test),
                         DCG = test,row.names = NULL) %>% 
   left_join(Genes_meth_prop, by = c('Gene' = 'Gene')) %>% 
@@ -169,20 +241,18 @@ for (i in seq_along(Mod_Index_NonPre)){
   sub = paste('kME',text,sep = '')
   # subset input data
   data_tmp = subset(datKME,MdouleAssign == text) %>% drop_na() %>% 
-    dplyr::mutate(Scale_KME = scale(get(sub))) %>%
-    dplyr::mutate(Scale_prop_all = scale(Prop_All)) %>% 
-    dplyr::mutate(Scale_prop_prmt = scale(Prop_Prpt)) %>% 
-    dplyr::mutate(Scale_prop_body = scale(Prop_Body)) %>% 
+    dplyr::mutate( KME = get(sub)) %>%
     # dplyr::mutate(Scale_prop_all = Diff_Prop_all/max(Diff_Prop_all)) %>% 
     # dplyr::mutate(Scale_prop_prmt = Diff_Prop_prom/max(Diff_Prop_prom)) %>% 
     # dplyr::mutate(Scale_prop_body = Diff_Prop_body/max(Diff_Prop_body)) %>% 
-    dplyr::select(Gene,Scale_KME,Scale_prop_all,Scale_prop_prmt,Scale_prop_body)
+    dplyr::select(Gene,KME,kTotal,kWithin,
+                  Prop_Prpt,Prop_Body,Prop_All)
   # pivot rotate
   data_module = data_tmp %>%
-    pivot_longer(cols = c(Scale_prop_all,Scale_prop_prmt,Scale_prop_body),
+    pivot_longer(cols = c(Prop_Prpt,Prop_Body,Prop_All),
                  names_to = "Cat", values_to = "Prop")
   print(
-    ggplot(data_module, aes(x = Scale_KME ,y = Prop, colour = Cat)) + # y = Scale_prop
+    ggplot(data_module, aes(x = kWithin ,y = Prop, colour = Cat)) + # y = Scale_prop
     geom_point() + 
     geom_jitter(width = 0.0001, height = 0.0001,alpha = 1) + 
     geom_smooth(method=lm)+
@@ -198,27 +268,24 @@ for (i in seq_along(Mod_Index_NonPre)){
 }
 dev.off()
 
-
 pdf('PDF_Results_Pre_test.pdf')
 for (i in seq_along(Mod_Index_Pre)){
   text = Mod_Index_Pre[i]
   sub = paste('kME',text,sep = '')
   # subset input data
   data_tmp = subset(datKME,MdouleAssign == text) %>% drop_na() %>% 
-    dplyr::mutate(Scale_KME = scale(get(sub))) %>%
-    dplyr::mutate(Scale_prop_all = scale(Prop_All)) %>% 
-    dplyr::mutate(Scale_prop_prmt = scale(Prop_Prpt)) %>% 
-    dplyr::mutate(Scale_prop_body = scale(Prop_Body)) %>%  
+    dplyr::mutate( KME = get(sub)) %>%
     # dplyr::mutate(Scale_prop_all = Diff_Prop_all/max(Diff_Prop_all)) %>% 
     # dplyr::mutate(Scale_prop_prmt = Diff_Prop_prom/max(Diff_Prop_prom)) %>% 
     # dplyr::mutate(Scale_prop_body = Diff_Prop_body/max(Diff_Prop_body)) %>% 
-    dplyr::select(Gene,Scale_KME,Scale_prop_all,Scale_prop_prmt,Scale_prop_body)
+    dplyr::select(Gene,KME,kTotal,kWithin,
+                  Prop_Prpt,Prop_Body,Prop_All)
   # pivot rotate
   data_module = data_tmp %>%
-    pivot_longer(cols = c(Scale_prop_all,Scale_prop_prmt,Scale_prop_body),
+    pivot_longer(cols = c(Prop_Prpt,Prop_Body,Prop_All),
                  names_to = "Cat", values_to = "Prop")
   print(
-    ggplot(data_module, aes(x = Scale_KME ,y = Prop, colour = Cat)) + # y = Scale_prop
+    ggplot(data_module, aes(x = kWithin ,y = Prop, colour = Cat)) + # y = Scale_prop
       geom_point() + 
       geom_jitter(width = 0.0001, height = 0.0001,alpha = 1) + 
       geom_smooth(method=lm)+
@@ -851,12 +918,14 @@ Bta_TcoF_list = Bta_TcoF_raw %>%
   dplyr::select(TcoF_ID) %>% unlist(use.names = F) %>% unique()
 length(Bta_TcoF_list)
 
+
 Bta_TF_Mstatus_raw = Bta_TF_raw %>% 
   left_join(Bta_TcoF_raw, by = c('Ensembl_ID' = 'TF_ID')) %>% 
   left_join(dplyr::select(symbol_test_bovine_corrected,ensembl_gene_id,Suggested.Symbol),
             by = c('TcoF_ID' = 'ensembl_gene_id')) %>% 
   left_join(Genes_meth_prop,by = c('Ensembl_ID'='Gene')) %>% 
   left_join(Genes_meth_prop,by = c('TcoF_ID'='Gene'))
+
 #
 Bta_TF_Mstatus_final = Bta_TF_Mstatus_raw %>%  
   dplyr::select(-c('Count1.y','Count2.y',
@@ -879,12 +948,6 @@ Overal_match_color = data.frame(Gene = colnames(datExpr_control),
   mutate(Cate = ifelse(Module %in% ModuleName_Unpreserved,'Unp','Pre'))
 
 all_Bta_TF_muscle = as.character(unique(Bta_TF_Mstatus_final$Suggested.Symbol.x))
-
-Gene_Traced_all = Genes_meth_prop %>% 
-  dplyr::filter(!(Count1 == 0 & Count1 == 0),Gene %in% Gene_net) %>% 
-  dplyr::select(Gene) %>% 
-  left_join(symbol_test_bovine_corrected,by = c('Gene'='ensembl_gene_id')) %>% 
-  dplyr::select(-ENTREZID)
 
 Bta_TF_OverlapMatch = OverlapOut %>% 
   dplyr::filter(OverNum != 0) %>%

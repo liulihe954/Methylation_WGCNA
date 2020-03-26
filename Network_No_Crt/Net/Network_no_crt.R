@@ -213,7 +213,7 @@ plotDendroAndColors(geneTree_control,
                     cbind(dynamicColors_control,moduleColors_control), 
                     c("Dynamic Tree Cut", "Merged Modules"), 
                     dendroLabels=F, hang=0.03, addGuide=TRUE,
-                    guideHang=0.05, 
+                    guideHang=0.05,
                     main="Gene Cluster Dendrogram (Control Diet)")
 plotDendroAndColors(geneTree_treatment,moduleColors_control,
                     "Modules", 

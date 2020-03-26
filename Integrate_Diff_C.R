@@ -10,30 +10,28 @@ library(methylKit)
 chr_index = paste(rep('chr',30),c(seq(1,29),'X'),sep = "")
 Diff_C_all = getData(methCov08Stat) %>% 
   mutate_at(vars(chr),as.character) %>% 
-  dplyr::filter(chr %in% chr_index)
+  dplyr::filter(chr %in% chr_index) # 5136556
 
 library(readxl)
 Diff_C_Sig = Diff_C_all %>% 
   dplyr::filter(qvalue <= 0.10) %>% 
   dplyr::filter(abs(meth.diff) >= 20)
-
-
+# make bed file
 Diff_C_Sig_BED = Diff_C_Sig  %>% 
   dplyr::select(chr,start,end)
-Diff_C_Sig_BED[,1] = str_replace(Diff_C_Sig_BED[,1],'chr','')
+Diff_C_Sig_BED[,1] = str_replace(Diff_C_Sig_BED[,1],'chr','') # 101094 
 
 colnames(Diff_C_Sig_BED) = NULL
+
 
 # rgmatch loci
 rgmatch_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch'
 setwd(rgmatch_loci)
-write.table(Diff_C_Sig_BED, file='Diff_C_Sig_BED.bed', row.names = F,quote=FALSE, sep='\t')
+write.table(Diff_C_Sig_BED, file='1_Sig_Cs_BED.bed', row.names = F,quote=FALSE, sep='\t')
 setwd(data_loci)
 ## ================================================================================================================== ##
-#   python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b Diff_C_Sig_BED.bed -r 'exon' -q 4 -o myassociations_new.txt  ##
+#   python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b 1_Sig_Cs_BED.bed -r 'exon' -q 4 -o myassociations_sig.txt  ##
 ## ================================================================================================================== ##
-
-
 
 #Count all Cs
 setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/MethEval')
@@ -41,22 +39,24 @@ load('All_Cs.rda')
 chr_index = paste(rep('chr',30),c(seq(1,29),'X'),sep = "")
 SeqC_all = getData(data) %>% 
   mutate_at(vars(chr),as.character) %>% 
-  dplyr::filter(chr %in% chr_index)
+  dplyr::filter(chr %in% chr_index) # 5136556
+
 #
 SeqC_all_BED = SeqC_all %>% 
   dplyr::select(chr,start,end)
 SeqC_all_BED[,1] = str_replace(SeqC_all_BED[,1],'chr','')
+
 colnames(SeqC_all_BED) = NULL
+
 # rgmatch loci
 rgmatch_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch'
 setwd(rgmatch_loci)
-write.table(SeqC_all_BED, file='SeqC_all_BED.bed', row.names = F,quote=FALSE, sep='\t')
+write.table(SeqC_all_BED, file='2_All_Cs_BED.bed', row.names = F,quote=FALSE, sep='\t')
+setwd(data_loci)
 ## ================================================================================================================== ##
-#     python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b SeqC_all_BED.bed -r 'exon' -q 4 -o myassociations_all_C.txt ##
+#   python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b 2_All_Cs_BED.bed -r 'exon' -q 4 -o myassociations_all.txt  ##
 ## ================================================================================================================== ##
 
-
-# 
 # # 
 # thres = 0.05
 # sig_type = 'qvalue'
