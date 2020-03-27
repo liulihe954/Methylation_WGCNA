@@ -304,17 +304,18 @@ levels(rbind_final$Cate)[levels(rbind_final$Cate)=="All"] <-  'All(6735)'
 levels(rbind_final$Cate)[levels(rbind_final$Cate)=="Pre"] <-  'Preserved(5589)'
 levels(rbind_final$Cate)[levels(rbind_final$Cate)=="Unp"] <-  'Unpreserved(1146)'
 
-P1 = ggplot() +
-  geom_violin(data = rbind_final, aes(x = Cate,y = Prop,fill=Cate))+
+
+P1 = ggplot() + 
+  geom_violin(data = rbind_final, aes(x = Cate,y = Prop,fill=Region))+
   #geom_violin(alpha =.8,width = .8) +
   #geom_boxplot(outlier.alpha = 0.2,outlier.size = 0.3) +
   xlab("Gene Preservation Status") + ylab('') +
-  theme(legend.position="none",
+  theme(#legend.position="none",
         axis.title.x = element_text(size=12, face="bold"),
         axis.text.x = element_text(size=9,color ='black',face="bold"),
         axis.text.y = element_text(size=9,color ='black',face="bold"),
-        strip.text = element_text(size=12,color ='black',face="bold")) +
-  facet_grid(~Region)
+        strip.text = element_text(size=12,color ='black',face="bold"))+
+  facet_wrap(~Region,labeller=variable_labeller)
 P1
 
 ####################  Fig5 Methylation Prop ###################
@@ -378,10 +379,110 @@ ggarrange(P1,P2,labels = c("A", "B"),ncol=1,nrow =2)
 dev.off()
 
 
+table(Gene_Meth_Viol$Cate)
+Gene_Meth_Viol_tmp_Gene = Gene_Meth_Viol %>% 
+  dplyr::select(Gene,Prop_Prpt,Prop_All,Cate) %>% 
+  mutate(Cate=recode(Cate, `Pre`="Preserved(5589)",`Unp`="Unpreserved(1146)"))
+
+Gene_Meth_Viol_tmp_Gene_dup = Gene_Meth_Viol_tmp_Gene %>% 
+  mutate(Cate=recode(Cate, `Preserved(5589)`="All(6735)",`Unpreserved(1146)`="All(6735)")) %>% 
+  rbind(Gene_Meth_Viol_tmp_Gene) %>% 
+  pivot_longer(cols = c(Prop_All,Prop_Prpt),
+               names_to = "Cat", values_to = "Prop") %>% 
+  mutate(Source = 'Genes')
+
+Gene_Meth_Viol_tmp_TF = Gene_Meth_Viol %>% 
+  dplyr::filter(TFinfo != 'NOT') %>%
+  dplyr::select(Gene,Prop_Prpt,Prop_All,Cate) %>% 
+  mutate(Cate=recode(Cate, `Pre`="Preserved(253)",`Unp`="Unpreserved(39)"))
+
+Gene_Meth_Viol_tmp_TF_dup = Gene_Meth_Viol_tmp_TF %>% 
+  mutate(Cate=recode(Cate, `Preserved(253)`="All(292)",`Unpreserved(39)`="All(292)")) %>% 
+  rbind(Gene_Meth_Viol_tmp_TF) %>% 
+  pivot_longer(cols = c(Prop_All,Prop_Prpt),
+               names_to = "Cat", values_to = "Prop") %>% 
+  mutate(Source = 'Transcription Factors')
+
+
+Meth_Viol_plot = rbind(Gene_Meth_Viol_tmp_Gene_dup,
+                       Gene_Meth_Viol_tmp_TF_dup)
+
+
+ggplot() +
+  geom_violin(data = Meth_Viol_plot,
+              aes(x = Cate,y = Prop,fill=Cat))+
+  #geom_violin(alpha =.8,width = .8) +
+  #geom_boxplot(outlier.alpha = 0.2,outlier.size = 0.3) +
+  xlab('') + ylab('Proportion of DMCs') +
+  theme(legend.position='bottom',
+        # Change legend key size and key width
+        legend.key.size = unit(0.5, "cm"),
+        legend.key.width = unit(0.5,"cm"),
+    #legend.position="none",
+    #legend.position = c(0.7, 0.2)
+    axis.title.x = element_text(size=14, face="bold"),
+    axis.title.y = element_text(size=14, face="bold"),
+    axis.text.x = element_text(size=9,color ='black'),
+    axis.text.y = element_text(size=6,color ='black'),
+    strip.text = element_text(size=12,color ='black',face="bold"),
+    legend.title = element_text(colour="black", size=10,face="bold"),
+    legend.text = element_text(colour="black", size=8,face="bold"),
+    legend.text.align = 0) +
+  facet_wrap(~Source,nrow = 2,scales = "free_x")+
+  labs(fill = "Region") +
+  scale_fill_discrete(name = "Region", labels = c(expression('Methprop'['GENE']),expression('Methprop'['REG'])))
+
+
+# Libraries
+library(tidyverse)
+library(WGCNA)
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+
+# Load dataset from github
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/10_OneNumSevCatSubgroupsSevObs.csv", header=T, sep=",") %>%
+  mutate(tip = round(tip/total_bill*100, 1))
+
+# Grouped
+data %>%
+  mutate(day = fct_reorder(day, tip)) %>%
+  mutate(day = factor(day, levels=c("Thur", "Fri", "Sat", "Sun"))) %>%
+  ggplot(aes(fill=sex, y=tip, x=day)) + 
+  geom_violin(position="dodge", alpha=0.5, outlier.colour="transparent") +
+  scale_fill_viridis(discrete=T, name="") +
+  theme_ipsum()  +
+  xlab("") +
+  ylab("Tip (%)") +
+  ylim(0,40)
 
 
 
+just4dup = Gene_Meth_Viol %>% 
+  dplyr::select(Gene,Prop_Prpt,Prop_All,Module,Cate) %>% 
+  mutate(Cate=recode(Cate, `Pre`="All",`Unpre`="All"))
 
+Gene_Meth_Viol_plot = rbind(dplyr::select(Gene_Meth_Viol,Gene,Prop_Prpt,Prop_All,Module,Cate),just4dup) %>% 
+  pivot_longer(cols = c(Prop_Prpt,Prop_All),
+               names_to = "Region", values_to = "Prop")
+
+ggplot(Gene_Meth_Viol_plot,aes(fill=Region, y=Prop, x=Cate)) + 
+  geom_violin(position="dodge", alpha = 0.5) +
+  scale_fill_viridis(discrete=T, name="") +
+  theme_ipsum()  +
+  xlab("") +
+  #ylab("Tip (%)") +
+  ylim(0,1) +
+  facet_wrap(~Region)
+
+
+
+demo = data %>%
+  mutate(day = fct_reorder(day, tip)) %>%
+  mutate(day = factor(day, levels=c("Thur", "Fri", "Sat", "Sun"))) %>% 
+  as_tibble()
 
 
 
