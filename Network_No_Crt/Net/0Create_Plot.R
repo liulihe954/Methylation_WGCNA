@@ -14,6 +14,9 @@ plot(METree_control,
      main = "Clustering of Initial MEs (Control Diet)",
      xlab = '', sub = "", ylab = "Height",
      hang = -1,cex = 0.35);MEDissThres = 0.2;abline(h = MEDissThres, col = "red")
+dev.off()
+
+
 
 par(mar = c(2,4.4,4.1,2))
 plotDendroAndColors(geneTree_control, 
@@ -97,7 +100,6 @@ dev.off()
 
 ####################  Fig3 Functional Enrich ###################
 library(openxlsx);library(tidyverse)
-require(openxlsx)
 setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/enrich_results')
 emptyentry = data.frame(ID = c(),
                         Name = c(),
@@ -370,13 +372,13 @@ P2
 
 library(gridExtra)
 
-tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
-     width = 14, height = 8, units = 'in', res = 300)
-ggarrange(P1,P2,labels = c("A", "B"),ncol=1,nrow =2)
-#grid.arrange(P1,P2,ncol=1,nrow =2)
-# plot_grid(P1,P2,align = c("v"),
-#            labels = c("A","B"), label_size= 12,label_colour = "black")
-dev.off()
+# tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
+#      width = 14, height = 8, units = 'in', res = 300)
+# ggarrange(P1,P2,labels = c("A", "B"),ncol=1,nrow =2)
+# #grid.arrange(P1,P2,ncol=1,nrow =2)
+# # plot_grid(P1,P2,align = c("v"),
+# #            labels = c("A","B"), label_size= 12,label_colour = "black")
+# dev.off()
 
 
 table(Gene_Meth_Viol$Cate)
@@ -408,7 +410,9 @@ Meth_Viol_plot = rbind(Gene_Meth_Viol_tmp_Gene_dup,
                        Gene_Meth_Viol_tmp_TF_dup)
 
 
-ggplot() +
+
+P4_Meth_bycate = 
+  ggplot() +
   geom_violin(data = Meth_Viol_plot,
               aes(x = Cate,y = Prop,fill=Cat))+
   #geom_violin(alpha =.8,width = .8) +
@@ -433,56 +437,33 @@ ggplot() +
   scale_fill_discrete(name = "Region", labels = c(expression('Methprop'['GENE']),expression('Methprop'['REG'])))
 
 
-# Libraries
-library(tidyverse)
-library(WGCNA)
-library(ggplot2)
-library(dplyr)
-library(forcats)
-library(hrbrthemes)
-library(viridis)
-
-# Load dataset from github
-data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/10_OneNumSevCatSubgroupsSevObs.csv", header=T, sep=",") %>%
-  mutate(tip = round(tip/total_bill*100, 1))
-
-# Grouped
-data %>%
-  mutate(day = fct_reorder(day, tip)) %>%
-  mutate(day = factor(day, levels=c("Thur", "Fri", "Sat", "Sun"))) %>%
-  ggplot(aes(fill=sex, y=tip, x=day)) + 
-  geom_violin(position="dodge", alpha=0.5, outlier.colour="transparent") +
-  scale_fill_viridis(discrete=T, name="") +
-  theme_ipsum()  +
-  xlab("") +
-  ylab("Tip (%)") +
-  ylim(0,40)
+tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
+     width = 14, height = 8, units = 'in', res = 300)
+print(P4_Meth_bycate)
+#grid.arrange(P1,P2,ncol=1,nrow =2)
+# plot_grid(P1,P2,align = c("v"),
+#            labels = c("A","B"), label_size= 12,label_colour = "black")
+dev.off()
 
 
+mat <- matrix(c(1,1,1,2,2,2,rep(3,6)), nrow = 2, byrow = TRUE)
+tiff("Fig0-Net-Constr-Background.tiff",width = 14, height = 8, units = 'in', res = 300)
+layout(mat)
+plot(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
+     cex.main = 1.5,cex.lab=1.2,font.lab=2,
+     xlab="Soft Threshold (power)",
+     ylab="Scale Free Topology Model Fit",type="n",
+     main = paste("Scale Independence"));text(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
+                                                      labels=powers,cex=0.9,col="red");abline(h=0.80,col="red");plot(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5],
+     cex.main = 1.5,cex.lab=1.2,font.lab=2,
+     xlab="Soft Threshold (power)",ylab="Mean Connectivity",type="n",
+     main = paste("Mean connectivity control"));text(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5], labels=powers, cex=cex1,col="red");abline(h=MeanK_b,col="red");par(mar = c(1,4.1,4.1,2));plot(METree_control, 
+     cex.main = 1.5,cex.lab=1.2,font.lab=2,
+     main = "Clustering of Initial MEs (Control Diet)",
+     xlab = '', sub = "", ylab = "Height",
+     hang = -1,cex = 0.6);MEDissThres = 0.2;abline(h = MEDissThres, col = "red")
+#axis(side = 2, at = seq(0,1,.2), col = "#F38630",labels = FALSE, lwd = 2)
+dev.off()
 
-just4dup = Gene_Meth_Viol %>% 
-  dplyr::select(Gene,Prop_Prpt,Prop_All,Module,Cate) %>% 
-  mutate(Cate=recode(Cate, `Pre`="All",`Unpre`="All"))
-
-Gene_Meth_Viol_plot = rbind(dplyr::select(Gene_Meth_Viol,Gene,Prop_Prpt,Prop_All,Module,Cate),just4dup) %>% 
-  pivot_longer(cols = c(Prop_Prpt,Prop_All),
-               names_to = "Region", values_to = "Prop")
-
-ggplot(Gene_Meth_Viol_plot,aes(fill=Region, y=Prop, x=Cate)) + 
-  geom_violin(position="dodge", alpha = 0.5) +
-  scale_fill_viridis(discrete=T, name="") +
-  theme_ipsum()  +
-  xlab("") +
-  #ylab("Tip (%)") +
-  ylim(0,1) +
-  facet_wrap(~Region)
-
-
-
-demo = data %>%
-  mutate(day = fct_reorder(day, tip)) %>%
-  mutate(day = factor(day, levels=c("Thur", "Fri", "Sat", "Sun"))) %>% 
-  as_tibble()
-
-
+# output module preservation statistics (excel)
 

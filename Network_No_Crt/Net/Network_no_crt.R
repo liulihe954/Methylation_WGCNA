@@ -156,7 +156,7 @@ pdf("Clustering_of_module_eigengenes_control.pdf",height=8,width=16)
 par(mar = c(2,4.1,4.1,2))
 plot(METree_control, 
      main = "Clustering of Initial MEs (Control Diet)",
-     xlab = "dafsaf", sub = "", ylab = "Height",
+     xlab = "", sub = "", ylab = "Height",
      hang = -1,cex = 0.35)
 ## We choose a height cut of 0.2, corresponding to correlation of 0.80, to merge
 MEDissThres = 0.2
@@ -200,10 +200,7 @@ print("Step5 - mergeing finished")
 #}
 #dev.off()
 #print("Step6 - heapmap created")
-plotDendroAndColors(geneTree, cbind(dynamicColors, mergedColors),
-                    c("Dynamic Tree Cut", "Merged dynamic"),
-                    dendroLabels = FALSE, hang = 0.03,
-                    addGuide = TRUE, guideHang = 0.05)
+
 #===============================================================================================
 #                           7. plot cross-condition dendrogram                               ###
 #===============================================================================================
