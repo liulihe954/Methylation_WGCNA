@@ -381,7 +381,12 @@ library(gridExtra)
 # dev.off()
 
 
-table(Gene_Meth_Viol$Cate)
+test = Gene_Meth_Viol %>% 
+  dplyr::filter(TFinfo =='TF') %>% 
+  group_by(Gene) %>% sample_n(1)
+length(unique(test$Gene))
+table(test$Cate)
+
 Gene_Meth_Viol_tmp_Gene = Gene_Meth_Viol %>% 
   dplyr::select(Gene,Prop_Prpt,Prop_All,Cate) %>% 
   mutate(Cate=recode(Cate, `Pre`="Preserved(5589)",`Unp`="Unpreserved(1146)"))
@@ -446,6 +451,8 @@ print(P4_Meth_bycate)
 dev.off()
 
 
+
+################  Figure 0 - background plots ####################
 mat <- matrix(c(1,1,1,2,2,2,rep(3,6)), nrow = 2, byrow = TRUE)
 tiff("Fig0-Net-Constr-Background.tiff",width = 14, height = 8, units = 'in', res = 300)
 layout(mat)
@@ -465,5 +472,148 @@ plot(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices
 #axis(side = 2, at = seq(0,1,.2), col = "#F38630",labels = FALSE, lwd = 2)
 dev.off()
 
+
+
+
+################  Files -  ####################
+################  1. gene measure ments
+################  2. associations related
+
+# 1. meth prop vs DCG and inCon
+dcg_raw = DCGL::WGCNA((t(datExpr_control)),(t(datExpr_treatment)),power = 24, variant = "DCp")
+Diff_Coexp = data.frame(Gene = names(dcg_raw),
+                        DCG = dcg_raw,row.names = NULL) %>% 
+  left_join(datKME,by = c('Gene'='Gene')) %>% 
+  dplyr::select(-Count_Prpt,-Count_Body,-Count_All,-Prop_Prpt,-Prop_Body,-Prop_All) %>% 
+  left_join(Genes_meth_prop, by = c('Gene' = 'Gene')) %>% 
+  #dplyr::select(Gene,DCG,Prop_Body,Prop_Prpt,Prop_All) %>% 
+  drop_na()
+Gene_deg_ME_count_out = Diff_Coexp[,c(1,17:19,2:16,20:25)]
+head(Gene_deg_ME_count_out)
+
+#2 module preservation 
+head(MP_Stats_final)
+
+require(openxlsx)
+list_of_datasets <-
+  list("Measurements by Genes" = Diff_Coexp,
+       "Module Preservation Statistics" = MP_Stats_final)
+write.xlsx(list_of_datasets, file = "Gene_Measure_and_MP_Stats.xlsx")
+
+#3 loci matching
+
+# done!
 # output module preservation statistics (excel)
+
+################  Figure 5 - linear relationship seperate ####################
+Diff_Coexp_plot1 = Diff_Coexp %>%
+  dplyr::select(-Module,-Prop_Prpt) %>% 
+  pivot_longer(cols = c(DCG,kWithin,kTotal,`Module Membership`), #,Prop_Body
+               names_to = "Kind", values_to = "Gene Measurement") %>% 
+  mutate(Region = 'All') %>% 
+  rename(Proportion = Prop_All)
+
+Diff_Coexp_plot2 = Diff_Coexp %>%
+  dplyr::select(-Module,-Prop_All) %>% 
+  pivot_longer(cols = c(DCG,kWithin,kTotal,`Module Membership`), #,Prop_Body
+               names_to = "Kind", values_to = "Gene Measurement") %>% 
+  mutate(Region = 'Promoter')%>% 
+  rename(Proportion = Prop_Prpt)
+
+Diff_Coexp_plot = rbind(Diff_Coexp_plot1,Diff_Coexp_plot2) %>% 
+  rename(`Methylation Proportion` = Proportion) %>% 
+  mutate(alpha = ifelse(Cate == 'Pre','1','.9'))
+
+genemeasure_vs_prop =
+  ggplot(Diff_Coexp_plot,aes(x = `Methylation Proportion`, y = `Gene Measurement`,colour = Cate),) + 
+  geom_point(aes(alpha = alpha),size = 1)+
+  theme(legend.position='bottom',
+        # Change legend key size and key width
+        legend.key.size = unit(.6, "cm"),
+        legend.key.width = unit(.6,"cm"),
+        #legend.position="none",
+        #legend.position = c(0.7, 0.2)
+        axis.title.x = element_text(size=14,face="bold"),
+        axis.title.y = element_text(size=14,face="bold"),
+        axis.text.x = element_text(size=9,color ='black',face="bold"),
+        axis.text.y = element_text(size=6,color ='black',face="bold"),
+        strip.text = element_text(size=12,color ='black',face="bold"),
+        legend.title = element_text(colour="black", size=10,face="bold"),
+        legend.text = element_text(colour="black", size=8,face="bold"),
+        legend.text.align = 0) +
+  scale_colour_discrete(name = "Preservation",labels = c('Preserved','Unpreserved'))+
+  coord_flip() +
+  facet_grid(Region~Kind,scales = 'free')+
+  guides(colour = guide_legend(override.aes = list(size=3)))+
+  scale_alpha_manual(values=c(1,0.2),guide=F)
+#genemeasure_vs_prop
+
+tiff("Fig5-Gene-Measure-vs-MethyProp.tiff",
+     width = 16, height = 10, units = 'in', res = 300)
+print(genemeasure_vs_prop)
+dev.off()
+
+
+################  Figure 6 - select TF by controling percentage ####################
+Bta_TF_OverlapMatch = OverlapOut %>% 
+  dplyr::filter(OverNum != 0) %>%
+  dplyr::filter(TF_Name %in% all_Bta_TF_muscle) %>% 
+  dplyr::filter(TF_Name %in% Genes_meth_prop_withSymbol$Suggested.Symbol) %>%
+  dplyr::filter(!(Module %in% 'Grey')) %>% 
+  left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
+  mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
+  mutate(OverPerc = OverNum/Size) %>% as_tibble() %>% 
+  group_by(TF_Name) %>% 
+  #dplyr::filter(OverNum == max(OverNum)) %>% sample_n(1) %>% 
+  dplyr::filter(OverPerc == max(OverPerc)) %>% sample_n(1) %>% 
+  dplyr::filter(DataBase != 'Marbach2016_cr')
+
+
+Bta_TF_Mstatus_final = Bta_TF_Mstatus_raw %>%  
+  dplyr::select(-c('Count_Body.x',#'Count_All.x
+                   'Count_Prpt.y','Count_Body.y','Count_All.y',)) %>% 
+  group_by(Suggested.Symbol.x) %>% 
+  mutate(TcoF_meth = mean(Prop_All.y)) %>% 
+  dplyr::select(-Prop_Body.y,-Prop_Prpt.y,-Prop_All.y,-SymbExist,-TcoF_ID,-Suggested.Symbol.y) %>% 
+  sample_n(1) %>% 
+  mutate(Prop_All_wTcoF = ifelse(is.na(Prop_All.x),TcoF_meth,TcoF_meth + Prop_All.x))
+
+
+table(Bta_TF_OverlapMatch$Pres)
+Bta_TF_OverlapMatch_plot = Bta_TF_OverlapMatch %>% 
+  left_join(Bta_TF_Mstatus_final,by = c('TF_Name'='Suggested.Symbol.x')) %>% 
+  replace_na(list(Prop_All_wTcoF = 0)) %>% 
+  pivot_longer(cols = c(Prop_Prpt.x,Prop_All.x),
+               names_to = "Kind", values_to = "Prop") %>% 
+  mutate(Pres=recode(Pres, `Pre`="Preserved(59)",`Unpre`="Unpreserved(54)"))
+
+
+Force_assign = 
+ggplot() + 
+  geom_violin(data = Bta_TF_OverlapMatch_plot,
+              aes(x = Pres,y =Prop,fill = Kind))+
+  #geom_violin(alpha =.8,width = .8) +
+  #geom_boxplot(outlier.alpha = 0.2,outlier.size = 0.3) +
+  xlab('Preservation Category') + ylab('Proportion of DMCs') +
+  theme(legend.position='bottom',
+        # Change legend key size and key width
+        legend.key.size = unit(0.5, "cm"),
+        legend.key.width = unit(0.5,"cm"),
+        #legend.position="none",
+        #legend.position = c(0.7, 0.2)
+        axis.title.x = element_text(size=14, face="bold"),
+        axis.title.y = element_text(size=14, face="bold"),
+        axis.text.x = element_text(size=12,color ='black'),
+        axis.text.y = element_text(size=9,color ='black'),
+        strip.text = element_text(size=12,color ='black',face="bold"),
+        legend.title = element_text(colour="black", size=10,face="bold"),
+        legend.text = element_text(colour="black", size=8,face="bold"),
+        legend.text.align = 0) +
+  labs(fill = "Region") +
+  scale_fill_discrete(name = "Region", labels = c(expression('Methprop'['GENE']),expression('Methprop'['REG'])))
+
+tiff("Fig6-forcely-assgin-tf.tiff",
+     width = 14, height = 8, units = 'in', res = 300)
+print(Force_assign)
+dev.off()
 

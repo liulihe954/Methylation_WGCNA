@@ -43,9 +43,10 @@ transpose_df <- function(df) {
     `rownames<-`(NULL)
   return(t_df)
 }
-# #
+#
 # Associ_out_all_raw = read.table('myassociations_all.txt',header = TRUE,stringsAsFactors = FALSE)
 # Associ_out_sig_raw = read.table('myassociations_sig.txt',header = TRUE,stringsAsFactors = FALSE)
+# 
 # #
 # Associ_out_all = Associ_out_all_raw %>%
 #   dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
@@ -61,6 +62,7 @@ transpose_df <- function(df) {
 #   mutate(Count_All = Count_Prpt + Count_Body) %>%
 #   dplyr::select(Gene,Count_Prpt,Count_Body,Count_All)
 # 
+# 
 # Associ_out_sig = Associ_out_sig_raw %>%
 #   dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
 #   group_by(Gene) %>%
@@ -75,6 +77,33 @@ transpose_df <- function(df) {
 #   mutate(Count_All = Count_Prpt + Count_Body) %>%
 #   dplyr::select(Gene,Count_Prpt,Count_Body,Count_All)
 # #
+# #setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch')
+# 
+# Associ_out_sig_out = Diff_C_Sig %>% 
+#   dplyr::select(chr,start,qvalue,meth.diff) %>% 
+#   left_join(dplyr::select(Associ_out_sig_raw,Midpoint,Gene,Area),
+#             by = c('start'='Midpoint')) %>% 
+#   replace_na(list(Gene = '-', Area = "INTERGENIC")) %>% 
+#   as_tibble()
+# 
+# Associ_out_all_count = Associ_out_all_raw %>%
+#   #dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
+#   group_by(Gene) %>%
+#   dplyr::count(Area) %>%
+#   tidyr::spread(key = Gene, value = n) %>%
+#   transpose_df() %>%
+#   replace(is.na(.), 0) %>%
+#   mutate_at(vars(-Area), as.numeric) %>%
+#   dplyr::rename(Gene = Area) %>% 
+#   as_tibble()
+# 
+# require(openxlsx)
+# list_of_datasets <- 
+#   list("Associations of Diff Meth CpGs" = Associ_out_sig_out,
+#        "Diff Meth CpGs Counts by Region" = Associ_out_all_count)
+# write.xlsx(list_of_datasets, file = "CpG_asso_count.xlsx")
+# 
+# 
 # "/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y))
 # Meth_Prop_Univ = Associ_out_all %>%
 #   left_join(Associ_out_sig, by = c('Gene' = 'Gene')) %>%
@@ -84,6 +113,7 @@ transpose_df <- function(df) {
 #          Prop_All = Count_All.y/Count_All.x) %>%
 #   dplyr::select(Gene,Count_Prpt.y,Count_Body.y,Count_All.y,Prop_Prpt,Prop_Body,Prop_All)
 # #
+# 
 # Meth_Prop_Univ %>%
 #   dplyr::filter(Prop_Prpt ==0,
 #                 Prop_Body==0,
@@ -91,73 +121,67 @@ transpose_df <- function(df) {
 # #
 # save(Associ_out_all,Associ_out_sig,Meth_Prop_Univ,file = 'Meth_Prop_Univ.rda')
 
-Associ_out_raw = read.table('myassociations_new_0319.txt',header = TRUE,stringsAsFactors = FALSE ) %>% 
-  dplyr::filter(Area != 'DOWNSTREAM') #%>% 
-  dplyr::select(Gene,Area)
-
-#head(Associ_out,100) %>% print(n = Inf)
-Associ_out =  Associ_out_raw %>% 
-  #dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
-  group_by(Gene) %>% 
-  dplyr::count(Area) %>%
-  tidyr::spread(key = Gene, value = n) %>% 
-  transpose_df() %>% 
-  replace(is.na(.), 0) %>% 
-  mutate_at(vars(-Area), as.numeric) %>% 
-  dplyr::rename(Gene = Area)
-
-Associ_out_count = Associ_out %>% 
-  mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
-  mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
-  dplyr::select(Gene,Count1,Count2)
-
-#
-load('Total_C_count_raw.rda')
-Total_C_count = Total_C_count_raw %>% 
-  mutate(Count1_all = `1st_EXON`+ GENE_BODY + INTRON) %>% 
-  mutate(Count2_all = PROMOTER + TSS + UPSTREAM)
-Total_C_count_2join = Total_C_count %>% 
-  dplyr::select(Gene,Count1_all,Count2_all)
-
-head(Total_C_count_raw)
-dim(Total_C_count_raw)
-
-
-
-"/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
-Associ_out_count_final = Associ_out_count %>% 
-  dplyr::left_join(Total_C_count_2join,by = c('Gene'= 'Gene')) %>% 
-  dplyr::select(Gene,Count1,Count2,Count1_all,Count2_all) %>% 
-  mutate(Prop_Body = Count1/Count1_all) %>% 
-  mutate(Prop_Prpt = Count2/Count2_all) %>% 
-  mutate(Prop_All = (Count1+Count2)/(Count1_all+Count2_all))
-
-
-# Count1 = 1st_EXON+ GENE_BODY + INTRON
-# Count2 = PROMOTER + TSS + UPSTREAM
-Genes_meth_prop = Associ_out_count_final %>% 
-  dplyr::filter(!is.na(Prop_Body) & Prop_Body <=1) %>% 
-  dplyr::filter(!is.na(Prop_Prpt) & Prop_Prpt <=1) %>% 
-  dplyr::filter(!is.na(Prop_All) & Prop_All <=1)
-
-Genes_meth_select = Genes_meth_prop %>% 
-  dplyr::filter((Count1 >= 20 | Count2 >= 3)) %>% 
-  dplyr::filter(Prop_Prpt >= quantile(Prop_Prpt,0.4)) %>%
-  dplyr::filter(Prop_All >= quantile(Prop_All,0.4)) %>%
-  dplyr::filter(Prop_Body >= quantile(Prop_Body,0.4)) %>%
-  dplyr::filter(Prop_Prpt != 0) %>%
-  dplyr::filter(Prop_All != 0) %>%
-  dplyr::filter(Prop_Body != 0) %>%
-  arrange(Prop_All)
-
-Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
-length(Diff_Meth_Gene_index)
-
-#save(Genes_meth_prop,file = 'Genes_meth_prop.txt')
-save(Genes_meth_prop,
-     Genes_meth_select,
-     Diff_Meth_Gene_index,
-     file = 'Genes_meth_prop.rda')
+# #head(Associ_out,100) %>% print(n = Inf)
+# Associ_out =  Associ_out_raw %>% 
+#   #dplyr::select(-Distance,-Transcript,-`Exon/Intron`,-TSSDistance,-PercRegion,-PercArea) %>% 
+#   group_by(Gene) %>% 
+#   dplyr::count(Area) %>%
+#   tidyr::spread(key = Gene, value = n) %>% 
+#   transpose_df() %>% 
+#   replace(is.na(.), 0) %>% 
+#   mutate_at(vars(-Area), as.numeric) %>% 
+#   dplyr::rename(Gene = Area)
+# 
+# Associ_out_count = Associ_out %>% 
+#   mutate(Count1 = `1st_EXON`+ GENE_BODY + INTRON) %>% 
+#   mutate(Count2 = PROMOTER + TSS + UPSTREAM) %>% 
+#   dplyr::select(Gene,Count1,Count2)
+# 
+# #
+# load('Total_C_count_raw.rda')
+# Total_C_count = Total_C_count_raw %>% 
+#   mutate(Count1_all = `1st_EXON`+ GENE_BODY + INTRON) %>% 
+#   mutate(Count2_all = PROMOTER + TSS + UPSTREAM)
+# Total_C_count_2join = Total_C_count %>% 
+#   dplyr::select(Gene,Count1_all,Count2_all)
+# 
+# head(Total_C_count_raw)
+# dim(Total_C_count_raw)
+# 
+# "/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y)) # special division
+# Associ_out_count_final = Associ_out_count %>% 
+#   dplyr::left_join(Total_C_count_2join,by = c('Gene'= 'Gene')) %>% 
+#   dplyr::select(Gene,Count1,Count2,Count1_all,Count2_all) %>% 
+#   mutate(Prop_Body = Count1/Count1_all) %>% 
+#   mutate(Prop_Prpt = Count2/Count2_all) %>% 
+#   mutate(Prop_All = (Count1+Count2)/(Count1_all+Count2_all))
+# 
+# 
+# # Count1 = 1st_EXON+ GENE_BODY + INTRON
+# # Count2 = PROMOTER + TSS + UPSTREAM
+# Genes_meth_prop = Associ_out_count_final %>% 
+#   dplyr::filter(!is.na(Prop_Body) & Prop_Body <=1) %>% 
+#   dplyr::filter(!is.na(Prop_Prpt) & Prop_Prpt <=1) %>% 
+#   dplyr::filter(!is.na(Prop_All) & Prop_All <=1)
+# 
+# Genes_meth_select = Genes_meth_prop %>% 
+#   dplyr::filter((Count1 >= 20 | Count2 >= 3)) %>% 
+#   dplyr::filter(Prop_Prpt >= quantile(Prop_Prpt,0.4)) %>%
+#   dplyr::filter(Prop_All >= quantile(Prop_All,0.4)) %>%
+#   dplyr::filter(Prop_Body >= quantile(Prop_Body,0.4)) %>%
+#   dplyr::filter(Prop_Prpt != 0) %>%
+#   dplyr::filter(Prop_All != 0) %>%
+#   dplyr::filter(Prop_Body != 0) %>%
+#   arrange(Prop_All)
+# 
+# Diff_Meth_Gene_index = unique(Genes_meth_select$Gene)
+# length(Diff_Meth_Gene_index)
+# 
+# #save(Genes_meth_prop,file = 'Genes_meth_prop.txt')
+# save(Genes_meth_prop,
+#      Genes_meth_select,
+#      Diff_Meth_Gene_index,
+#      file = 'Genes_meth_prop.rda')
 
 ######=========================##########
 ##         2. in module inves         ##
@@ -179,7 +203,11 @@ inMod_con = intramodularConnectivity(adjacency_control,
 inMod_con$Gene = rownames(inMod_con)
 head(inMod_con)
 
-datKME_tmp = signedKME(datExpr_control, MEs_control)
+datKME_tmp = signedKME(datExpr_control,MEs_control)
+
+summary(datKME$Prop_All)
+summary(datKME$Prop_Prpt)
+
 '/' <- base:::"/"
 datKME = datKME_tmp %>% 
   dplyr::mutate(Gene = rownames(datKME_tmp)) %>% 
@@ -202,22 +230,30 @@ Mod_Index_Pre = Mod_Index_Pre[-grep('gold',Mod_Index_Pre)]
 ##        diff C prop vs M.M           ##
 ######=========================##########
 #
-#install.packages('DCGL')
 library(DCGL)
-test = DCGL::WGCNA((t(datExpr_control)),(t(datExpr_treatment)),
+dcg_raw = DCGL::WGCNA((t(datExpr_control)),(t(datExpr_treatment)),
                    power = 24, variant = "DCp")
-
-head(Genes_meth_prop)
-
-Diff_Coexp = data.frame(Gene = names(test),
-                        DCG = test,row.names = NULL) %>% 
+Diff_Coexp = data.frame(Gene = names(dcg_raw),
+                        DCG = dcg_raw,row.names = NULL) %>% 
   left_join(Genes_meth_prop, by = c('Gene' = 'Gene')) %>% 
-  dplyr::select(Gene,DCG,Prop_Body,Prop_Prpt,Prop_All) %>% 
-  drop_na()
+  dplyr::select(Gene,DCG,Prop_Prpt,Prop_All) %>% 
+  drop_na() %>% as_tibble() %>% 
+  left_join(inMod_con,by = c('Gene'='Gene')) %>% 
+  left_join(Overal_match_color,by = c('Gene'='Gene'))
 
-Diff_Coexp_plot = Diff_Coexp %>%
-  pivot_longer(cols = c(Prop_All,Prop_Prpt,Prop_Body),
-               names_to = "Cat", values_to = "Prop")
+for (i in seq_along(Diff_Coexp$Gene)){
+  target = Diff_Coexp$Gene[i]
+  text = unlist(Diff_Coexp[i,7],use.names = F)
+  sub = paste('kME',text,sep = '')
+  #
+  row_loc = which(datKME$Gene == target)
+  col_loc = which(names(datKME) == sub)
+  # assign
+  Diff_Coexp[i,9] = datKME[row_loc,col_loc]
+}
+names(Diff_Coexp)[9] = 'Module Membership'
+
+
 print(
   ggplot(Diff_Coexp_plot, aes(x = DCG ,y = Prop, colour = Cat)) + # y = Scale_prop
     geom_point() + 
@@ -233,6 +269,24 @@ print(
           legend.position='top', 
           plot.title = element_text(hjust = 0.5)))
 dev.off()
+
+print(
+  ggplot(Diff_Coexp_plot, aes(x = DCG ,y = Prop, colour = Cat)) + # y = Scale_prop
+    geom_point() + 
+    geom_jitter(width = 0.0001, height = 0.0001,alpha = 1) + 
+    geom_smooth(method=lm)+
+    ggtitle("Methylation VS DCG Score") +
+    xlab("InModule_Con") + ylab("MethC_Prop") +
+    guides(color=guide_legend(title="Genomic Regions")) +
+    scale_color_manual(labels = c("All","Upper","Body"),
+                       values = c("Green","blue", "turquoise"))+
+    theme(legend.key = element_rect(fill = "transparent", colour = "transparent"),
+          #legend.key = element_rect(colour = 'black', fill = 'blank', size = 0.5, linetype='dashed'),
+          legend.position='top', 
+          plot.title = element_text(hjust = 0.5)))
+dev.off()
+
+
 
 #i = 3
 pdf('PDF_Results_NonP_test.pdf')
@@ -928,8 +982,8 @@ Bta_TF_Mstatus_raw = Bta_TF_raw %>%
 
 #
 Bta_TF_Mstatus_final = Bta_TF_Mstatus_raw %>%  
-  dplyr::select(-c('Count1.y','Count2.y',
-                   'Count1_all.x','Count1_all.y','Count2_all.x','Count2_all.y',)) %>% 
+  dplyr::select(-c('Count_Prpt.x','Count_Body.x','Count_All.x',
+                   'Count_Prpt.y','Count_Body.y','Count_All.y',)) %>% 
   group_by(Suggested.Symbol.x) %>% 
   mutate(TcoF_meth = mean(Prop_All.y)) %>% 
   dplyr::select(-Prop_Body.y,-Prop_Prpt.y,-Prop_All.y,-SymbExist,-TcoF_ID,-Suggested.Symbol.y) %>% 
@@ -949,17 +1003,22 @@ Overal_match_color = data.frame(Gene = colnames(datExpr_control),
 
 all_Bta_TF_muscle = as.character(unique(Bta_TF_Mstatus_final$Suggested.Symbol.x))
 
+Genes_meth_prop_withSymbol = 
+  Genes_meth_prop %>% 
+  left_join(symbol_test_bovine_corrected,by=c('Gene'='ensembl_gene_id'))
+
 Bta_TF_OverlapMatch = OverlapOut %>% 
   dplyr::filter(OverNum != 0) %>%
   dplyr::filter(TF_Name %in% all_Bta_TF_muscle) %>% 
-  dplyr::filter(TF_Name %in% Gene_Traced_all$Suggested.Symbol) %>%
-  dplyr::filter(!(TF_Name %in% 'Grey')) %>% 
+  dplyr::filter(TF_Name %in% Genes_meth_prop_withSymbol$Suggested.Symbol) %>%
+  dplyr::filter(!(Module %in% 'Grey')) %>% 
   left_join(ModuleSize, by = c('Module' = 'Module')) %>% 
   mutate(Pres = ifelse(Module %in% ModuleName_Unpreserved,'Unpre','Pre')) %>% 
-  mutate(OverPerc = OverNum/Size) %>%
-  group_by(Module,TF_Name) %>% 
-  dplyr::filter(OverPerc == max(OverPerc)) %>% 
-  sample_n(1)
+  mutate(OverPerc = OverNum/Size) %>% as_tibble() %>% 
+  group_by(TF_Name) %>% 
+  #dplyr::filter(OverNum == max(OverNum)) %>% sample_n(1) %>% 
+  dplyr::filter(OverPerc == max(OverPerc)) %>% sample_n(1) %>% 
+  dplyr::filter(DataBase != 'Marbach2016_cr')
 
 #
 Bta_TF_OverlapMatch_plot = Bta_TF_OverlapMatch %>% 

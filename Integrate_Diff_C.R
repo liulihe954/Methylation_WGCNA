@@ -14,15 +14,18 @@ Diff_C_all = getData(methCov08Stat) %>%
 
 library(readxl)
 Diff_C_Sig = Diff_C_all %>% 
-  dplyr::filter(qvalue <= 0.10) %>% 
-  dplyr::filter(abs(meth.diff) >= 20)
+  dplyr::filter(qvalue <= 0.10,abs(meth.diff) >= 20)
+dim(Diff_C_Sig)
+
 # make bed file
 Diff_C_Sig_BED = Diff_C_Sig  %>% 
   dplyr::select(chr,start,end)
 Diff_C_Sig_BED[,1] = str_replace(Diff_C_Sig_BED[,1],'chr','') # 101094 
-
 colnames(Diff_C_Sig_BED) = NULL
 
+# TEST_Diff_C = read.xlsx('DiffC_Gene.xlsx')
+# table(TEST_Diff_C$Chromosome)
+# length(unique(TEST_Diff_C$Position))
 
 # rgmatch loci
 rgmatch_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch'
