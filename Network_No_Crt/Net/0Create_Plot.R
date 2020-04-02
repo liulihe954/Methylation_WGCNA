@@ -524,34 +524,114 @@ Diff_Coexp_plot = rbind(Diff_Coexp_plot1,Diff_Coexp_plot2) %>%
   rename(`Methylation Proportion` = Proportion) %>% 
   mutate(alpha = ifelse(Cate == 'Pre','1','.9'))
 
+#
+
+
+ggplot(my.data, aes(x, y)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = formula) +
+  stat_poly_eq(formula = formula,
+               output.type = "numeric",
+               parse = TRUE,
+               mapping =
+                 aes(label = sprintf(my.format,
+                                     stat(coef.ls)[[1]][[2, "Estimate"]],
+                                     stat(coef.ls)[[4]][[2, "P-value"]]))
+  )
+library(ggpmisc)
+library(ggpubr)
+#my.format ="b[0]~`=`~%.3g*\", \"*b[1]~`=`~%.3g*\""
+
+my.format <-
+  "b[0]~`=`~%.3g*\",\"*b[1]~`=`~%.3g"
+
 genemeasure_vs_prop =
-  ggplot(Diff_Coexp_plot,aes(x = `Methylation Proportion`, y = `Gene Measurement`,colour = Cate),) + 
+  ggplot(Diff_Coexp_plot,aes(x = `Methylation Proportion`,
+                             y = `Gene Measurement`,colour = Cate),) + 
   geom_point(aes(alpha = alpha),size = 1)+
+  geom_smooth(method = "lm",
+              aes(group = factor(Cate),colour = factor(Cate)),
+              formula =y ~ x,se = F)+
+  # stat_fit_glance(method = "lm",
+  #                 method.args = list(formula = y ~ x),
+  #                 geom = "text",
+  #                 hstep = 2,
+  #                 vstep = 1,
+  #                 label.x = .5,
+  #                 label.y = .003,
+  #                 aes(label = paste("P-value = ", signif(..p.value.., digits = 4), sep = " ")))+
+  stat_poly_eq(
+    formula = y ~ x,#aes(label = ..rr.label..), #, sep = "~~~~"
+    output.type = "numeric",
+    mapping = aes(label = sprintf(my.format,
+                          stat(coef.ls)[[1]][[1]],
+                          stat(coef.ls)[[1]][[2]])),
+    vstep = .9,
+    hstep = .2,
+    label.x.npc = .4,
+    #label.y.npc = .5,
+    parse = T)+
+  # # stat_poly_eq(aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~")), 
+  #              parse = TRUE,
+  #              #label.y = .5,#"top",label.x = .5
+  #              label.x.npc = "left", label.y.npc = "top")+
   theme(legend.position='bottom',
         # Change legend key size and key width
-        legend.key.size = unit(.6, "cm"),
-        legend.key.width = unit(.6,"cm"),
-        #legend.position="none",
-        #legend.position = c(0.7, 0.2)
+        legend.key.size = unit(.3, "cm"),
+        legend.key.width = unit(.3,"cm"),
+        legend.title = element_text(colour="black", size=10,face="bold"),
+        legend.text = element_text(colour="black", size=8,face="bold"),
+        legend.text.align = 0,
         axis.title.x = element_text(size=14,face="bold"),
         axis.title.y = element_text(size=14,face="bold"),
         axis.text.x = element_text(size=9,color ='black',face="bold"),
         axis.text.y = element_text(size=6,color ='black',face="bold"),
-        strip.text = element_text(size=12,color ='black',face="bold"),
-        legend.title = element_text(colour="black", size=10,face="bold"),
-        legend.text = element_text(colour="black", size=8,face="bold"),
-        legend.text.align = 0) +
+        strip.text = element_text(size=12,color ='black',face="bold")) +
   scale_colour_discrete(name = "Preservation",labels = c('Preserved','Unpreserved'))+
   coord_flip() +
   facet_grid(Region~Kind,scales = 'free')+
+  #labs(linetype="Legend")+
   guides(colour = guide_legend(override.aes = list(size=3)))+
-  scale_alpha_manual(values=c(1,0.2),guide=F)
-#genemeasure_vs_prop
+  scale_alpha_manual(values=c(1,0.2),guide=F);genemeasure_vs_prop
+  
+
 
 tiff("Fig5-Gene-Measure-vs-MethyProp.tiff",
      width = 16, height = 10, units = 'in', res = 300)
 print(genemeasure_vs_prop)
 dev.off()
+
+##
+DCG_Pre = Diff_Coexp %>% dplyr::filter(Cate == 'Pre') %>% dplyr::select(DCG) %>% unlist(use.names = F)
+kTotal_Pre = Diff_Coexp %>% dplyr::filter(Cate == 'Pre') %>% dplyr::select(kTotal) %>% unlist(use.names = F)
+kWithin_Pre = Diff_Coexp %>% dplyr::filter(Cate == 'Pre') %>% dplyr::select(kWithin) %>% unlist(use.names = F)
+MM_Pre = Diff_Coexp %>% dplyr::filter(Cate == 'Pre') %>% dplyr::select(`Module Membership`) %>% unlist(use.names = F)
+#
+PropPrmp_Pre = Diff_Coexp %>% dplyr::filter(Cate == 'Pre') %>% dplyr::select(Prop_Prpt) %>% unlist(use.names = F)
+PropAll_Pre = Diff_Coexp %>% dplyr::filter(Cate == 'Pre') %>% dplyr::select(Prop_All) %>% unlist(use.names = F)
+
+##
+DCG_Unp = Diff_Coexp %>% dplyr::filter(Cate == 'Unp') %>% dplyr::select(DCG) %>% unlist(use.names = F)
+kTotal_Un = Diff_Coexp %>% dplyr::filter(Cate == 'Unp') %>% dplyr::select(kTotal) %>% unlist(use.names = F)
+kWithin_Unp = Diff_Coexp %>% dplyr::filter(Cate == 'Unp') %>% dplyr::select(kWithin) %>% unlist(use.names = F)
+MM_Unp = Diff_Coexp %>% dplyr::filter(Cate == 'Unp') %>% dplyr::select(`Module Membership`) %>% unlist(use.names = F)
+#
+PropPrmp_Unp = Diff_Coexp %>% dplyr::filter(Cate == 'Unp') %>% dplyr::select(Prop_Prpt) %>% unlist(use.names = F)
+PropAll_Unp = Diff_Coexp %>% dplyr::filter(Cate == 'Unp') %>% dplyr::select(Prop_All) %>% unlist(use.names = F)
+library(broom)
+df = data.frame(v1 = get('DCG_Pre'),
+                v2 = get('kTotal_Pre'))
+lmod = lm(v1~v2,df)
+
+#adjrsq = $adj.r.squared
+coef = lmod$coefficients[2,1]
+pr = lmod$coefficients[2,4]
+
+names(lmod)
+
+lm_detail = function(v1,v2){
+  
+}
 
 
 ################  Figure 6 - select TF by controling percentage ####################
@@ -616,4 +696,59 @@ tiff("Fig6-forcely-assgin-tf.tiff",
      width = 14, height = 8, units = 'in', res = 300)
 print(Force_assign)
 dev.off()
+
+#### 
+ks.test(male,female)
+wilcox.test(male,female) 
+
+
+
+Gene_Unp_All = Gene_Meth_Viol %>% 
+  dplyr::filter(Cate == 'Unp',TFinfo == 'NOT') %>% 
+  dplyr::select(Prop_All) %>% 
+  unlist(use.names = F)
+Gene_Unp_Prmp = Gene_Meth_Viol %>% 
+  dplyr::filter(Cate == 'Unp',TFinfo == 'NOT') %>% 
+  dplyr::select(Prop_Prpt) %>% 
+  unlist(use.names = F)
+
+Gene_Pre_All = Gene_Meth_Viol %>% 
+  dplyr::filter(Cate == 'Pre',TFinfo == 'NOT') %>% 
+  dplyr::select(Prop_All) %>% 
+  unlist(use.names = F)
+
+Gene_Pre_Prmp = Gene_Meth_Viol %>% 
+  dplyr::filter(Cate == 'Pre',TFinfo == 'NOT') %>% 
+  dplyr::select(Prop_Prpt) %>% 
+  unlist(use.names = F)
+
+TF_Unp_All  = Gene_Meth_Viol %>% 
+  dplyr::filter(Cate == 'Unp',TFinfo != 'NOT') %>% 
+  dplyr::select(Prop_All) %>% 
+  unlist(use.names = F)
+
+TF_Unp_Prmp = Gene_Meth_Viol %>% 
+  dplyr::filter(Cate == 'Unp',TFinfo != 'NOT') %>% 
+  dplyr::select(Prop_Prpt) %>% 
+  unlist(use.names = F)
+
+TF_Pre_All = Gene_Meth_Viol %>% 
+  dplyr::filter(Cate == 'Pre',TFinfo != 'NOT') %>% 
+  dplyr::select(Prop_All) %>% 
+  unlist(use.names = F)
+
+TF_Pre_Prmp = Gene_Meth_Viol %>% 
+  dplyr::filter(Cate == 'Pre',TFinfo != 'NOT') %>% 
+  dplyr::select(Prop_Prpt) %>% 
+  unlist(use.names = F)
+
+# KS test
+a = ks.test(Gene_Pre_All,Gene_Unp_All)
+2*a$p.value
+2*ks.test(Gene_Unp_Prmp,Gene_Pre_Prmp)$p.value
+ks.test(TF_Unp_All,TF_Pre_All)
+ks.test(TF_Unp_Prmp,TF_Pre_Prmp)
+
+
+
 
