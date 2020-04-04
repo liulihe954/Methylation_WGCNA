@@ -192,7 +192,7 @@ Genes_meth_prop = Meth_Prop_Univ %>%
   rename(Count_Prpt = Count_Prpt.y,
          Count_Body = Count_Body.y,
          Count_All = Count_All.y)
-
+library(WGCNA)
 table(Gene_net %in% Meth_Prop_Univ$Gene) # lost 299
 table(Gene_all %in% Meth_Prop_Univ$Gene) # lost 1722
 #length(Gene_all) # 20479

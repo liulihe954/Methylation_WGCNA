@@ -54,7 +54,7 @@ DengroTreatment = as.ggplot(~plotDendroAndColors(geneTree_treatment,moduleColors
 
 
 library(ggpubr)
-tiff("Fig1-Net-Dengdro.tiff", width = 12, height = 20, units = 'in', res = 300)
+tiff("Fig1-Net-Dengdro.tiff", width = 12, height = 20, units = 'in', res = 500)
 #grid.arrange(DengroControl,DengroTreatment,ncol=1,nrow =2)
 ggarrange(DengroControl,DengroTreatment, labels = c("A", "B"),ncol=1,nrow =2)
 # plot_grid(DengroControl,DengroTreatment,align = c("v"),
@@ -89,7 +89,7 @@ ggplot(MP_Stats_nobig, aes(moduleSize,medianRank.pres,label = Row.names)) +
         axis.title.y = element_text(size=14, face="bold"))
 
 
-tiff("Fig2-Net-Presv-stats.tiff", width = 16, height = 10, units = 'in', res = 300)
+tiff("Fig2-Net-Presv-stats.tiff", width = 16, height = 10, units = 'in', res = 500)
 #PresZsum / PresMedianR
 ggarrange(PresZsum,PresMedianR,labels = c("A", "B"),ncol=2,nrow =1)
 # plot_grid(PresZsum,PresMedianR,
@@ -214,7 +214,7 @@ ggEnrich = ggplot()+
 
 dev.off()
  
-tiff("Fig3-Enrichment-Bar.tiff", width = 10, height = 6, units = 'in', res = 300)
+tiff("Fig3-Enrichment-Bar.tiff", width = 10, height = 6, units = 'in', res = 500)
 plot(ggEnrich)
 dev.off()
 
@@ -265,14 +265,10 @@ Overal_match_color = data.frame(Gene = colnames(datExpr_control),
   mutate(Cate = ifelse(Module %in% ModuleName_Unpreserved,'Unp','Pre'))
 
 #Bta_TF_list;Bta_TcoF_list
-
 Gene_Meth_Viol = Meth_Prop_Univ %>% 
   left_join(Overal_match_color,by = c('Gene'='Gene')) %>% drop_na() %>% 
   mutate(TFinfo = ifelse(Gene %in% Bta_TF_list,'TF',
                          ifelse(Gene %in% Bta_TcoF_list,'TcoF','NOT')))
-
-table(Gene_Meth_Viol$Cate)
-
 
 #
 Gene_Meth_Viol2 = Gene_Meth_Viol
@@ -317,7 +313,7 @@ P1 = ggplot() +
         axis.text.x = element_text(size=9,color ='black',face="bold"),
         axis.text.y = element_text(size=9,color ='black',face="bold"),
         strip.text = element_text(size=12,color ='black',face="bold"))+
-  facet_wrap(~Region,labeller=variable_labeller)
+  facet_wrap(~Region,labeller = variable_labeller)
 P1
 
 ####################  Fig5 Methylation Prop ###################
@@ -371,7 +367,7 @@ P2 = ggplot() +
 P2
 
 library(gridExtra)
-
+library(tidyverse)
 # tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
 #      width = 14, height = 8, units = 'in', res = 300)
 # ggarrange(P1,P2,labels = c("A", "B"),ncol=1,nrow =2)
@@ -379,7 +375,6 @@ library(gridExtra)
 # # plot_grid(P1,P2,align = c("v"),
 # #            labels = c("A","B"), label_size= 12,label_colour = "black")
 # dev.off()
-
 
 test = Gene_Meth_Viol %>% 
   dplyr::filter(TFinfo =='TF') %>% 
@@ -440,11 +435,12 @@ P4_Meth_bycate =
   facet_wrap(~Source,nrow = 2,scales = "free_x")+
   labs(fill = "Region") +
   scale_fill_discrete(name = "Region", labels = c(expression('Methprop'['GENE']),expression('Methprop'['REG'])))
+P4_Meth_bycate
 
+# tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
+#      width = 14, height = 8, units = 'in', res = 300)
+# print(P4_Meth_bycate)
 
-tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
-     width = 14, height = 8, units = 'in', res = 300)
-print(P4_Meth_bycate)
 #grid.arrange(P1,P2,ncol=1,nrow =2)
 # plot_grid(P1,P2,align = c("v"),
 #            labels = c("A","B"), label_size= 12,label_colour = "black")
@@ -454,7 +450,7 @@ dev.off()
 
 ################  Figure 0 - background plots ####################
 mat <- matrix(c(1,1,1,2,2,2,rep(3,6)), nrow = 2, byrow = TRUE)
-tiff("Fig0-Net-Constr-Background.tiff",width = 14, height = 8, units = 'in', res = 300)
+tiff("Fig0-Net-Constr-Background.tiff",width = 14, height = 8, units = 'in', res = 500)
 layout(mat)
 plot(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
      cex.main = 1.5,cex.lab=1.2,font.lab=2,
@@ -481,24 +477,18 @@ dev.off()
 
 # 1. meth prop vs DCG and inCon
 dcg_raw = DCGL::WGCNA((t(datExpr_control)),(t(datExpr_treatment)),power = 24, variant = "DCp")
-Diff_Coexp = data.frame(Gene = names(dcg_raw),
-                        DCG = dcg_raw,row.names = NULL) %>% 
-  left_join(datKME,by = c('Gene'='Gene')) %>% 
-  dplyr::select(-Count_Prpt,-Count_Body,-Count_All,-Prop_Prpt,-Prop_Body,-Prop_All) %>% 
-  left_join(Genes_meth_prop, by = c('Gene' = 'Gene')) %>% 
-  #dplyr::select(Gene,DCG,Prop_Body,Prop_Prpt,Prop_All) %>% 
-  drop_na()
+
 Gene_deg_ME_count_out = Diff_Coexp[,c(1,17:19,2:16,20:25)]
 head(Gene_deg_ME_count_out)
 
 #2 module preservation 
 head(MP_Stats_final)
 
-require(openxlsx)
-list_of_datasets <-
-  list("Measurements by Genes" = Diff_Coexp,
-       "Module Preservation Statistics" = MP_Stats_final)
-write.xlsx(list_of_datasets, file = "Gene_Measure_and_MP_Stats.xlsx")
+# require(openxlsx)
+# list_of_datasets <-
+#   list("Measurements by Genes" = Diff_Coexp,
+#        "Module Preservation Statistics" = MP_Stats_final)
+# write.xlsx(list_of_datasets, file = "Gene_Measure_and_MP_Stats.xlsx")
 
 #3 loci matching
 
@@ -525,21 +515,9 @@ Diff_Coexp_plot = rbind(Diff_Coexp_plot1,Diff_Coexp_plot2) %>%
   mutate(alpha = ifelse(Cate == 'Pre','1','.9'))
 
 #
-
-
-ggplot(my.data, aes(x, y)) +
-  geom_point() +
-  geom_smooth(method = "lm", formula = formula) +
-  stat_poly_eq(formula = formula,
-               output.type = "numeric",
-               parse = TRUE,
-               mapping =
-                 aes(label = sprintf(my.format,
-                                     stat(coef.ls)[[1]][[2, "Estimate"]],
-                                     stat(coef.ls)[[4]][[2, "P-value"]]))
-  )
 library(ggpmisc)
 library(ggpubr)
+library(broom)
 #my.format ="b[0]~`=`~%.3g*\", \"*b[1]~`=`~%.3g*\""
 
 my.format <-
@@ -547,34 +525,21 @@ my.format <-
 
 genemeasure_vs_prop =
   ggplot(Diff_Coexp_plot,aes(x = `Methylation Proportion`,
-                             y = `Gene Measurement`,colour = Cate),) + 
+                             y = `Gene Measurement`,color = Cate),) + 
   geom_point(aes(alpha = alpha),size = 1)+
+  facet_grid(Region~Kind,scales = 'free')+ coord_flip() +
   geom_smooth(method = "lm",
               aes(group = factor(Cate),colour = factor(Cate)),
               formula =y ~ x,se = F)+
-  # stat_fit_glance(method = "lm",
-  #                 method.args = list(formula = y ~ x),
-  #                 geom = "text",
-  #                 hstep = 2,
-  #                 vstep = 1,
-  #                 label.x = .5,
-  #                 label.y = .003,
-  #                 aes(label = paste("P-value = ", signif(..p.value.., digits = 4), sep = " ")))+
-  stat_poly_eq(
-    formula = y ~ x,#aes(label = ..rr.label..), #, sep = "~~~~"
-    output.type = "numeric",
-    mapping = aes(label = sprintf(my.format,
-                          stat(coef.ls)[[1]][[1]],
-                          stat(coef.ls)[[1]][[2]])),
-    vstep = .9,
-    hstep = .2,
-    label.x.npc = .4,
-    #label.y.npc = .5,
-    parse = T)+
-  # # stat_poly_eq(aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~")), 
-  #              parse = TRUE,
-  #              #label.y = .5,#"top",label.x = .5
-  #              label.x.npc = "left", label.y.npc = "top")+
+  stat_fit_tidy(method = "lm",
+                label.x = .8,
+                vstep = .4,
+                hstep = .05,
+                method.args = list(formula = y ~ x),
+                mapping = aes(size = 3,
+                              label = sprintf("slope = %.1e\np-val = %.1e",
+                                              stat(x_estimate),
+                                              stat(x_p.value))))+
   theme(legend.position='bottom',
         # Change legend key size and key width
         legend.key.size = unit(.3, "cm"),
@@ -585,19 +550,17 @@ genemeasure_vs_prop =
         axis.title.x = element_text(size=14,face="bold"),
         axis.title.y = element_text(size=14,face="bold"),
         axis.text.x = element_text(size=9,color ='black',face="bold"),
-        axis.text.y = element_text(size=6,color ='black',face="bold"),
+        axis.text.y = element_text(size=9,color ='black',face="bold"),
         strip.text = element_text(size=12,color ='black',face="bold")) +
   scale_colour_discrete(name = "Preservation",labels = c('Preserved','Unpreserved'))+
-  coord_flip() +
-  facet_grid(Region~Kind,scales = 'free')+
+  
   #labs(linetype="Legend")+
   guides(colour = guide_legend(override.aes = list(size=3)))+
   scale_alpha_manual(values=c(1,0.2),guide=F);genemeasure_vs_prop
-  
-
-
+genemeasure_vs_prop
+#
 tiff("Fig5-Gene-Measure-vs-MethyProp.tiff",
-     width = 16, height = 10, units = 'in', res = 300)
+     width = 16, height = 10, units = 'in', res = 500)
 print(genemeasure_vs_prop)
 dev.off()
 
@@ -618,20 +581,14 @@ MM_Unp = Diff_Coexp %>% dplyr::filter(Cate == 'Unp') %>% dplyr::select(`Module M
 #
 PropPrmp_Unp = Diff_Coexp %>% dplyr::filter(Cate == 'Unp') %>% dplyr::select(Prop_Prpt) %>% unlist(use.names = F)
 PropAll_Unp = Diff_Coexp %>% dplyr::filter(Cate == 'Unp') %>% dplyr::select(Prop_All) %>% unlist(use.names = F)
-library(broom)
-df = data.frame(v1 = get('DCG_Pre'),
-                v2 = get('kTotal_Pre'))
-lmod = lm(v1~v2,df)
 
-#adjrsq = $adj.r.squared
-coef = lmod$coefficients[2,1]
-pr = lmod$coefficients[2,4]
+# library(broom)
+# df = data.frame(v1 = get('DCG_Pre'),
+#                 v2 = get('PropPrmp_Pre'))
+# lmod   = lm(v1~v2,df)
+# summary(lmod)
 
-names(lmod)
 
-lm_detail = function(v1,v2){
-  
-}
 
 
 ################  Figure 6 - select TF by controling percentage ####################
@@ -645,9 +602,10 @@ Bta_TF_OverlapMatch = OverlapOut %>%
   mutate(OverPerc = OverNum/Size) %>% as_tibble() %>% 
   group_by(TF_Name) %>% 
   #dplyr::filter(OverNum == max(OverNum)) %>% sample_n(1) %>% 
-  dplyr::filter(OverPerc == max(OverPerc)) %>% sample_n(1) %>% 
+  dplyr::filter(OverPerc == max(OverPerc)) %>% sample_n(1) #%>% 
   dplyr::filter(DataBase != 'Marbach2016_cr')
 
+table(Bta_TF_OverlapMatch$Pres)
 
 Bta_TF_Mstatus_final = Bta_TF_Mstatus_raw %>%  
   dplyr::select(-c('Count_Body.x',#'Count_All.x
@@ -659,14 +617,63 @@ Bta_TF_Mstatus_final = Bta_TF_Mstatus_raw %>%
   mutate(Prop_All_wTcoF = ifelse(is.na(Prop_All.x),TcoF_meth,TcoF_meth + Prop_All.x))
 
 
-table(Bta_TF_OverlapMatch$Pres)
 Bta_TF_OverlapMatch_plot = Bta_TF_OverlapMatch %>% 
   left_join(Bta_TF_Mstatus_final,by = c('TF_Name'='Suggested.Symbol.x')) %>% 
   replace_na(list(Prop_All_wTcoF = 0)) %>% 
   pivot_longer(cols = c(Prop_Prpt.x,Prop_All.x),
                names_to = "Kind", values_to = "Prop") %>% 
-  mutate(Pres=recode(Pres, `Pre`="Preserved(59)",`Unpre`="Unpreserved(54)"))
+  mutate(Pres=recode(Pres, `Pre`="Preserved(113)",`Unpre`="Unpreserved(199)"))
 
+
+kstest  = Bta_TF_OverlapMatch %>% 
+  left_join(Bta_TF_Mstatus_final,by = c('TF_Name'='Suggested.Symbol.x')) %>% 
+  replace_na(list(Prop_All_wTcoF = 0)) %>% 
+  mutate(Pres=recode(Pres, `Pre`="Preserved(113)",`Unpre`="Unpreserved(199)"))
+
+
+#
+BT_Unp_all = kstest %>% 
+  ungroup() %>% 
+  dplyr::filter(Pres =='Unpreserved(199)') %>% 
+  dplyr::select(Prop_All_wTcoF) %>% 
+  unlist(use.names = F)
+
+
+BT_Pre_all = kstest %>% 
+  ungroup() %>% 
+  dplyr::filter(Pres =='Preserved(113)') %>% 
+  dplyr::select(Prop_All_wTcoF) %>% 
+  unlist(use.names = F)
+
+
+BT_Unp_prmp = kstest %>% 
+  ungroup() %>% 
+  dplyr::filter(Pres =='Unpreserved(199)') %>% 
+  dplyr::select(Prop_Prpt.x) %>% 
+  unlist(use.names = F)
+
+
+BT_Pre_prmp = kstest %>% 
+  ungroup() %>% 
+  dplyr::filter(Pres =='Preserved(113)') %>% 
+  dplyr::select(Prop_Prpt.x) %>% 
+  unlist(use.names = F)
+
+aa = ks.test(BT_Unp_all,BT_Pre_all)
+bb = ks.test(BT_Unp_prmp,BT_Unp_prmp)
+aa$p.value
+bb$p.value
+
+#####
+anno3 <- data.frame(xstar = c(1.5), 
+                    ystar = c(.2),
+                    lab = c("KS-test p-val: 0.775"),
+                    Source = c("Genes", "Transcription Factors"))
+
+anno4 <- data.frame(xstar = c(1.5), 
+                    ystar = c(.15),
+                    lab = c("KS-test p-val: 1"),
+                    Source = c("Genes", "Transcription Factors"))
 
 Force_assign = 
 ggplot() + 
@@ -690,10 +697,20 @@ ggplot() +
         legend.text = element_text(colour="black", size=8,face="bold"),
         legend.text.align = 0) +
   labs(fill = "Region") +
-  scale_fill_discrete(name = "Region", labels = c(expression('Methprop'['GENE']),expression('Methprop'['REG'])))
+  scale_fill_discrete(name = "Region", labels = c(expression('Methprop'['GENE']),expression('Methprop'['REG'])))+
+  geom_text(data = anno3,
+            aes(x = xstar,  y = ystar, label = lab),
+            size=5,
+            color = '#F8766D', fontface = "bold")+
+  geom_text(data = anno4,
+            aes(x = xstar,  y = ystar, label = lab),
+            size=5,
+            color = '#00BFC4', fontface = "bold")
+Force_assign
+
 
 tiff("Fig6-forcely-assgin-tf.tiff",
-     width = 14, height = 8, units = 'in', res = 300)
+     width = 14, height = 8, units = 'in', res = 500)
 print(Force_assign)
 dev.off()
 
@@ -744,10 +761,81 @@ TF_Pre_Prmp = Gene_Meth_Viol %>%
 
 # KS test
 a = ks.test(Gene_Pre_All,Gene_Unp_All)
-2*a$p.value
-2*ks.test(Gene_Unp_Prmp,Gene_Pre_Prmp)$p.value
-ks.test(TF_Unp_All,TF_Pre_All)
-ks.test(TF_Unp_Prmp,TF_Pre_Prmp)
+b = ks.test(Gene_Pre_Prmp,Gene_Unp_Prmp)
+a$p.value
+b$p.value
+
+c = ks.test(TF_Pre_All,TF_Unp_All)
+d = ks.test(TF_Pre_Prmp,TF_Unp_Prmp)
+c$p.value
+d$p.value
+
+
+library(grid)
+# Create a text
+grob <- grobTree(textGrob("Scatter plot", x=0.1,  y=0.95, hjust=0,
+                          gp=gpar(col="red", fontsize=13, fontface="italic")))
+# Plot
+anno1 <- data.frame(x1 = c(1.75, 0.75), 
+                   x2 = c(2.25, 1.25), 
+                   y1 = c(1, 1), 
+                   y2 = c(1, 1), 
+                   xstar = c(2.5,2.58), 
+                   ystar = c(.7, .7),
+                   lab = c("KS-test p-val: 1.1e-16", "KS-test p-val: p-val: 1.5e-3"),
+                   Source = c("Genes", "Transcription Factors"))
+
+anno2 <- data.frame(x1 = c(1.75, 0.75), 
+                   x2 = c(2.25, 1.25), 
+                   y1 = c(1, 1), 
+                   y2 = c(1, 1), 
+                   xstar = c(2.5,2.55), 
+                   ystar = c(.4, .4),
+                   lab = c("KS-test p-val: 0.735", "KS-test p-val: p-val: 1"),
+                   Source = c("Genes", "Transcription Factors"))
+  
+P4_Meth_bycate = 
+  ggplot() +
+  geom_violin(data = Meth_Viol_plot,
+              aes(x = Cate,y = Prop,fill=Cat))+
+  #geom_violin(alpha =.8,width = .8) +
+  #geom_boxplot(outlier.alpha = 0.2,outlier.size = 0.3) +
+  xlab('') + ylab('Proportion of DMCs') +
+  theme(legend.position='bottom',
+        # Change legend key size and key width
+        legend.key.size = unit(0.5, "cm"),
+        legend.key.width = unit(0.5,"cm"),
+        #legend.position="none",
+        #legend.position = c(0.7, 0.2)
+        axis.title.x = element_text(size=14, face="bold"),
+        axis.title.y = element_text(size=14, face="bold"),
+        axis.text.x = element_text(size=9,color ='black'),
+        axis.text.y = element_text(size=6,color ='black'),
+        strip.text = element_text(size=12,color ='black',face="bold"),
+        legend.title = element_text(colour="black", size=10,face="bold"),
+        legend.text = element_text(colour="black", size=8,face="bold"),
+        legend.text.align = 0) +
+  facet_wrap(~Source,nrow = 2,scales = "free_x")+
+  labs(fill = "Region") +
+  scale_fill_discrete(name = "Region", labels = c(expression('Methprop'['GENE']),expression('Methprop'['REG'])))+
+  geom_text(data = anno1,
+            aes(x = xstar,  y = ystar, label = lab),
+            size=5,
+            color = '#F8766D', fontface = "bold")+
+  geom_text(data = anno2,
+            aes(x = xstar,  y = ystar, label = lab),
+            size=5,
+            color = '#00BFC4', fontface = "bold")
+P4_Meth_bycate 
+
+#color = data.frame(ggplot_build(P4_Meth_bycate)$data)
+#table(color$fill)
+#F8766D #00BFC4
+tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
+     width = 14, height = 8, units = 'in', res = 500)
+print(P4_Meth_bycate)
+dev.off()
+
 
 
 
