@@ -175,7 +175,7 @@ for (i in seq_along(ModuleName_Unpreserved)){
   names(enrich_terms_out)[i] = module
   write.xlsx(enrich_terms_out, file = 'Enrich_results_summary.xlsx')
 }
-
+library(gplots)
 #
 item_index = c(1,4,30,56,70,212,461,8,9,11,48,235,28,74,18,65,47,50)
 item_cate_func = c(rep('ribosomal',7),rep('Mitochondrial',5),rep('ATP',2),rep('rRNA',2),rep('NAD(P)H',2))
@@ -187,20 +187,51 @@ antiquewhile_enrichsummary_plot =
   mutate(Ylable = paste0('[',ID,']',':',Name,'(',Total_Genes,')')) %>% 
   mutate(ID_Y = paste0('[',ID,']',' (',Total_Genes,')')) %>% 
   mutate(log10pvalue = -log10(pvalue_r)) %>% 
-  mutate_at('Func_cate',fct_infreq)
-antiquewhile_enrichsummary_plot$ID =
-  factor(antiquewhile_enrichsummary_plot$ID,
-         levels = c('R-BTA-72706','R-BTA-72702','M17739','M14381','IPR011332','GO:0022627','GO:0003735',
-                    'R-BTA-6791226','GO:0019843',
-                    'R-BTA-163200','GO:0015986',
-                    'M11099','GO:0032981','GO:0005753','GO:0005743','D025261',
-                    'D016660','D009247'))
-#
+  mutate_at('Func_cate',fct_infreq) %>% 
+  mutate(fill_plot = as.character(recode(Func_cate,
+                            ribosomal = col2hex('red'),
+                            Mitochondrial = col2hex('blue'),
+                            ATP = col2hex('green'),
+                            `NAD(P)H` = col2hex('orange'),
+                            rRNA = col2hex('purple'))))
+antiquewhile_enrichsummary_plot$ID_Y =
+  factor(antiquewhile_enrichsummary_plot$ID_Y,
+         levels = rev(c('[R-BTA-72706] (66)','[R-BTA-72702] (42)','[M17739] (585)','[M14381] (310)','[IPR011332] (8)','[GO:0022627] (45)','[GO:0003735] (157)',
+                    '[R-BTA-6791226] (99)','[GO:0019843] (30)',
+                    '[R-BTA-163200] (52)','[GO:0015986] (17)',
+                    '[M11099] (68)','[GO:0032981] (34)','[GO:0005753] (18)','[GO:0005743] (224)','[D025261] (19)',
+                    '[D016660] (39)','[D009247] (38)')))
+colorindex = as.character(antiquewhile_enrichsummary_plot$fill_plot)
+
+# 
+# gg_color_hue <- function(n) {
+#   hues = seq(15, 375, length = n + 1)
+#   hcl(h = hues, l = 65, c = 100)[1:n]
+# }
+# 
+# n = 18
+# cols = gg_color_hue(n)
+# 
+# tst = colourName(cols)
+# ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+#   if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+#   hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+# }
+# ggplotColours(n = 3)
+# colourName(ggplotColours(n = 3))
+# 
+# color = data.frame(ggplot_build(ggEnrich)$data)
+# table(color$fill)
+
+#fill_plot = as.vector(antiquewhile_enrichsummary_plot$fill_plot)
 ggEnrich = ggplot()+
   geom_bar(antiquewhile_enrichsummary_plot,
-           mapping = aes(x = ID_Y,y = hitsPerc,fill = Func_cate),
+           mapping = aes(x = ID_Y, y = hitsPerc),
+           fill = colorindex, ## colour = fill_plot,fill = rep('#619CFF',18)
            stat = "identity", width=0.2) +
-  scale_y_continuous(name = expression(bold("Hits Percentage")),
+  #scale_colour_manual(values= colorindex) +
+  #scale_fill_manual(values = fill_plot)+
+  scale_y_continuous(name = expression(bold("Hits Percentage (985 in Total)")),
                      sec.axis = sec_axis(~.* 30/100, name = expression(bold("-log10(pvalue)"))),
                      limits = c(0,100), breaks = seq(0,100,by=5))+
   geom_point(antiquewhile_enrichsummary_plot,
@@ -209,13 +240,12 @@ ggEnrich = ggplot()+
         axis.title.y = element_blank(),
         axis.text.y = element_text(size=8,face="bold",color = "black"),
         axis.text.x = element_text(size=10,face="bold",color = "black")) + 
-  #facet_wrap(~Func_cate,scales = 'free',dir = "v")+
   coord_flip()
+ggEnrich
 
-dev.off()
- 
+#F8766D #00BFC4
 tiff("Fig3-Enrichment-Bar.tiff", width = 10, height = 6, units = 'in', res = 500)
-plot(ggEnrich)
+print(ggEnrich)
 dev.off()
 
 ####################  Fig4 Methylation Prop ###################
@@ -409,15 +439,44 @@ Gene_Meth_Viol_tmp_TF_dup = Gene_Meth_Viol_tmp_TF %>%
 Meth_Viol_plot = rbind(Gene_Meth_Viol_tmp_Gene_dup,
                        Gene_Meth_Viol_tmp_TF_dup)
 
+##### fig 4 new ####
+Gene_Meth_Viol_tmp_TF_new = Gene_Meth_Viol %>% 
+  dplyr::filter(TFinfo != 'NOT') %>%
+  dplyr::select(Gene,Prop_Prpt,Prop_All,Cate) %>% 
+  pivot_longer(cols = c(Prop_Prpt,Prop_All),
+               names_to = "Region", values_to = "Prop") %>% 
+  mutate(Source = 'Transcription Factor')
 
+
+P4_Meth_bycate_new = Gene_Meth_Viol %>% 
+  dplyr::select(-c(TFinfo,Module,Count_Prpt.y,Count_Body.y,Count_All.y,Prop_Body)) %>% 
+  pivot_longer(cols = c(Prop_Prpt,Prop_All),
+               names_to = "Region", values_to = "Prop") %>% 
+  mutate(Source = 'Gene') %>% 
+  rbind(Gene_Meth_Viol_tmp_TF_new) %>% 
+  dplyr::filter(Prop<= .2) %>% 
+  mutate(fill_plot = as.character(recode(Cate,Pre = col2hex('red'),Unp = col2hex('blue'))))
+colorindex_viol = as.character(P4_Meth_bycate_new$fill_plot)
+
+
+# variable_names <- list(
+#   'Prop_All' = expression('Methprop'['GENE']),
+#   'Prop_Prpt' = expression('Methprop'['REG']),
+#   'Gene' = 'Gene',
+#   'Transcription Factor' = 'Transcription Factor')
+
+variable_labeller <- function(variable,value){ return(variable_names[value]) } 
+
+
+
+col2hex(c('red','blue'))
 
 P4_Meth_bycate = 
-  ggplot() +
-  geom_violin(data = Meth_Viol_plot,
-              aes(x = Cate,y = Prop,fill=Cat))+
-  #geom_violin(alpha =.8,width = .8) +
-  #geom_boxplot(outlier.alpha = 0.2,outlier.size = 0.3) +
-  xlab('') + ylab('Proportion of DMCs') +
+ggplot() +
+  geom_violin(data = P4_Meth_bycate_new,
+              aes(x = Region,y = Prop,fill = Cate))+
+    xlab('') + ylab('Proportion of DMCs') + 
+    facet_grid(Source ~ Region,scales = "free",labeller=variable_labeller)+
   theme(legend.position='bottom',
         # Change legend key size and key width
         legend.key.size = unit(0.5, "cm"),
@@ -426,30 +485,27 @@ P4_Meth_bycate =
     #legend.position = c(0.7, 0.2)
     axis.title.x = element_text(size=14, face="bold"),
     axis.title.y = element_text(size=14, face="bold"),
-    axis.text.x = element_text(size=9,color ='black'),
+    axis.text.x = element_blank(),
     axis.text.y = element_text(size=6,color ='black'),
-    strip.text = element_text(size=12,color ='black',face="bold"),
     legend.title = element_text(colour="black", size=10,face="bold"),
     legend.text = element_text(colour="black", size=8,face="bold"),
-    legend.text.align = 0) +
-  facet_wrap(~Source,nrow = 2,scales = "free_x")+
-  labs(fill = "Region") +
-  scale_fill_discrete(name = "Region", labels = c(expression('Methprop'['GENE']),expression('Methprop'['REG'])))
-P4_Meth_bycate
+    legend.text.align = 0,
+    strip.text = element_text(size=12,color ='black',face="bold"),
+    strip.background = element_rect(colour="black", size=1)) + 
+  scale_fill_manual(values = c("red","blue"),labels = c('Preserved','Unpreserved'),
+                    name= " ", guide = guide_legend(reverse = F))
+  
+#scale_fill_discrete(name = "", labels = c('Preserved','Unpreserved'))
+  #scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))
 
-# tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
-#      width = 14, height = 8, units = 'in', res = 300)
-# print(P4_Meth_bycate)
-
-#grid.arrange(P1,P2,ncol=1,nrow =2)
-# plot_grid(P1,P2,align = c("v"),
-#            labels = c("A","B"), label_size= 12,label_colour = "black")
+tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
+     width = 14, height = 8, units = 'in', res = 500)
+print(P4_Meth_bycate)
 dev.off()
-
-
 
 ################  Figure 0 - background plots ####################
 mat <- matrix(c(1,1,1,2,2,2,rep(3,6)), nrow = 2, byrow = TRUE)
+cex1
 tiff("Fig0-Net-Constr-Background.tiff",width = 14, height = 8, units = 'in', res = 500)
 layout(mat)
 plot(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
@@ -460,7 +516,7 @@ plot(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices
                                                       labels=powers,cex=0.9,col="red");abline(h=0.80,col="red");plot(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5],
      cex.main = 1.5,cex.lab=1.2,font.lab=2,
      xlab="Soft Threshold (power)",ylab="Mean Connectivity",type="n",
-     main = paste("Mean connectivity control"));text(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5], labels=powers, cex=cex1,col="red");abline(h=MeanK_b,col="red");par(mar = c(1,4.1,4.1,2));plot(METree_control, 
+     main = paste("Mean connectivity"));text(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5], labels=powers, cex=.9,col="red");abline(h=MeanK_b,col="red");par(mar = c(1,4.1,4.1,2));plot(METree_control, 
      cex.main = 1.5,cex.lab=1.2,font.lab=2,
      main = "Clustering of Initial MEs (Control Diet)",
      xlab = '', sub = "", ylab = "Height",
@@ -515,6 +571,10 @@ Diff_Coexp_plot = rbind(Diff_Coexp_plot1,Diff_Coexp_plot2) %>%
   mutate(alpha = ifelse(Cate == 'Pre','1','.9'))
 
 #
+
+Diff_Coexp_plot_new = Diff_Coexp_plot %>% 
+  dplyr::filter(Kind == 'kWithin')
+
 library(ggpmisc)
 library(ggpubr)
 library(broom)
@@ -523,23 +583,34 @@ library(broom)
 my.format <-
   "b[0]~`=`~%.3g*\",\"*b[1]~`=`~%.3g"
 
+variable_names_lm <- list(
+  'All' = expression('Methprop'['GENE']),
+  'Promoter' = expression('Methprop'['REG']))
+
+variable_labeller_lm <- function(variable,value){ return(variable_names_lm[value]) } 
+
+
+
+
 genemeasure_vs_prop =
-  ggplot(Diff_Coexp_plot,aes(x = `Methylation Proportion`,
+  ggplot(Diff_Coexp_plot_new,aes(x = `Methylation Proportion`,
                              y = `Gene Measurement`,color = Cate),) + 
-  geom_point(aes(alpha = alpha),size = 1)+
-  facet_grid(Region~Kind,scales = 'free')+ coord_flip() +
+  geom_point(aes(alpha = alpha),size = 1) +
+  facet_wrap(~Region,ncol = 1,scales = 'free',labeller=variable_labeller_lm)+
+  coord_flip() +
   geom_smooth(method = "lm",
               aes(group = factor(Cate),colour = factor(Cate)),
               formula =y ~ x,se = F)+
-  stat_fit_tidy(method = "lm",
-                label.x = .8,
-                vstep = .4,
-                hstep = .05,
-                method.args = list(formula = y ~ x),
-                mapping = aes(size = 3,
-                              label = sprintf("slope = %.1e\np-val = %.1e",
-                                              stat(x_estimate),
-                                              stat(x_p.value))))+
+  ylab('Intramodular Connectivity')+
+  # stat_fit_tidy(method = "lm",
+  #               label.x = .8,
+  #               vstep = .4,
+  #               hstep = .05,
+  #               method.args = list(formula = y ~ x),
+  #               mapping = aes(size = 3,
+  #                             label = sprintf("slope = %.1e\np-val = %.1e",
+  #                                             stat(x_estimate),
+  #                                             stat(x_p.value))))+\
   theme(legend.position='bottom',
         # Change legend key size and key width
         legend.key.size = unit(.3, "cm"),
@@ -552,12 +623,26 @@ genemeasure_vs_prop =
         axis.text.x = element_text(size=9,color ='black',face="bold"),
         axis.text.y = element_text(size=9,color ='black',face="bold"),
         strip.text = element_text(size=12,color ='black',face="bold")) +
-  scale_colour_discrete(name = "Preservation",labels = c('Preserved','Unpreserved'))+
+  scale_alpha_manual(values=c(1,0.3),guide=F)+
+  #scale_color_manual(values=col2hex(c('red','blue')))+
+  scale_fill_discrete2(name = "",labels = c('Preserved','Unpreserved'))
+
+
+  #scale_fill_manual(values = cols2)+
+  #scale_fill_manual("Preservation",values=c("orange","red"))
+  #scale_color_manual(values=col2hex(c('red','blue')))+
+
+# scale_fill_discrete2 <- function(...) {
+#   scale_colour_manual(..., values = col2hex(c('red','blue')))
+# }
   
-  #labs(linetype="Legend")+
-  guides(colour = guide_legend(override.aes = list(size=3)))+
-  scale_alpha_manual(values=c(1,0.2),guide=F);genemeasure_vs_prop
 genemeasure_vs_prop
+
+
+col2hex(c('red','blue'))
+cols2 <- c("Pre" = "red", "Unp" = "blue")
+genemeasure_vs_prop
+
 #
 tiff("Fig5-Gene-Measure-vs-MethyProp.tiff",
      width = 16, height = 10, units = 'in', res = 500)
