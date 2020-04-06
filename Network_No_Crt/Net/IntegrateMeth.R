@@ -249,9 +249,9 @@ for (i in seq_along(Diff_Coexp$Gene)){
   row_loc = which(datKME$Gene == target)
   col_loc = which(names(datKME) == sub)
   # assign
-  Diff_Coexp[i,9] = datKME[row_loc,col_loc]
+  Diff_Coexp[i,8] = datKME[row_loc,col_loc]
 }
-names(Diff_Coexp)[9] = 'Module Membership'
+names(Diff_Coexp)[8] = 'Module Membership'
 
 
 print(

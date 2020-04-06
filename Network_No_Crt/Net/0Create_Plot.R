@@ -34,8 +34,6 @@ plotDendroAndColors(geneTree_treatment,
                     main="Gene Cluster Dendrogram (Methionine Diet)")
 dev.off()
 
-
-
 ######################  Fig1 Net-Dengdro #############################
 
 DengroControl = as.ggplot(~plotDendroAndColors(geneTree_control, 
@@ -231,8 +229,8 @@ ggEnrich = ggplot()+
            stat = "identity", width=0.2) +
   #scale_colour_manual(values= colorindex) +
   #scale_fill_manual(values = fill_plot)+
-  scale_y_continuous(name = expression(bold("Hits Percentage (985 in Total)")),
-                     sec.axis = sec_axis(~.* 30/100, name = expression(bold("-log10(pvalue)"))),
+  scale_y_continuous(name = expression(bold("Percentage of Significant Genes")),
+                     sec.axis = sec_axis(~.* 30/100, name = expression(bold("-log10(P-value)"))),
                      limits = c(0,100), breaks = seq(0,100,by=5))+
   geom_point(antiquewhile_enrichsummary_plot,
              mapping = aes(x = ID_Y,y = log10pvalue*100/30,fill = Func_cate)) +
@@ -242,6 +240,7 @@ ggEnrich = ggplot()+
         axis.text.x = element_text(size=10,face="bold",color = "black")) + 
   coord_flip()
 ggEnrich
+
 
 #F8766D #00BFC4
 tiff("Fig3-Enrichment-Bar.tiff", width = 10, height = 6, units = 'in', res = 500)
@@ -442,15 +441,15 @@ Meth_Viol_plot = rbind(Gene_Meth_Viol_tmp_Gene_dup,
 ##### fig 4 new ####
 Gene_Meth_Viol_tmp_TF_new = Gene_Meth_Viol %>% 
   dplyr::filter(TFinfo != 'NOT') %>%
-  dplyr::select(Gene,Prop_Prpt,Prop_All,Cate) %>% 
-  pivot_longer(cols = c(Prop_Prpt,Prop_All),
+  dplyr::select(Gene,Prop_Prpt,Prop_Body,Cate) %>% 
+  pivot_longer(cols = c(Prop_Prpt,Prop_Body),
                names_to = "Region", values_to = "Prop") %>% 
   mutate(Source = 'Transcription Factor')
 
 
 P4_Meth_bycate_new = Gene_Meth_Viol %>% 
-  dplyr::select(-c(TFinfo,Module,Count_Prpt.y,Count_Body.y,Count_All.y,Prop_Body)) %>% 
-  pivot_longer(cols = c(Prop_Prpt,Prop_All),
+  dplyr::select(-c(TFinfo,Module,Count_Prpt.y,Count_Body.y,Count_All.y,Prop_All)) %>% 
+  pivot_longer(cols = c(Prop_Prpt,Prop_Body),
                names_to = "Region", values_to = "Prop") %>% 
   mutate(Source = 'Gene') %>% 
   rbind(Gene_Meth_Viol_tmp_TF_new) %>% 
@@ -459,11 +458,11 @@ P4_Meth_bycate_new = Gene_Meth_Viol %>%
 colorindex_viol = as.character(P4_Meth_bycate_new$fill_plot)
 
 
-# variable_names <- list(
-#   'Prop_All' = expression('Methprop'['GENE']),
-#   'Prop_Prpt' = expression('Methprop'['REG']),
-#   'Gene' = 'Gene',
-#   'Transcription Factor' = 'Transcription Factor')
+variable_names <- list(
+  'Prop_Body' = 'Gene Body',
+  'Prop_Prpt' = 'Regulatory Regions',
+  'Gene' = 'Genes',
+  'Transcription Factor' = 'Transcription Factors')
 
 variable_labeller <- function(variable,value){ return(variable_names[value]) } 
 
@@ -475,12 +474,12 @@ P4_Meth_bycate =
 ggplot() +
   geom_violin(data = P4_Meth_bycate_new,
               aes(x = Region,y = Prop,fill = Cate))+
-    xlab('') + ylab('Proportion of DMCs') + 
+    xlab('') + ylab('Methylation Level') + 
     facet_grid(Source ~ Region,scales = "free",labeller=variable_labeller)+
   theme(legend.position='bottom',
         # Change legend key size and key width
-        legend.key.size = unit(0.5, "cm"),
-        legend.key.width = unit(0.5,"cm"),
+        legend.key.size = unit(0.6, "cm"),
+        legend.key.width = unit(0.6,"cm"),
     #legend.position="none",
     #legend.position = c(0.7, 0.2)
     axis.title.x = element_text(size=14, face="bold"),
@@ -488,13 +487,14 @@ ggplot() +
     axis.text.x = element_blank(),
     axis.text.y = element_text(size=6,color ='black'),
     legend.title = element_text(colour="black", size=10,face="bold"),
-    legend.text = element_text(colour="black", size=8,face="bold"),
+    legend.text = element_text(colour="black", size=14,face="bold"),
     legend.text.align = 0,
     strip.text = element_text(size=12,color ='black',face="bold"),
     strip.background = element_rect(colour="black", size=1)) + 
-  scale_fill_manual(values = c("red","blue"),labels = c('Preserved','Unpreserved'),
+  scale_fill_manual(values = c("red","blue"),labels = c('Preserved Modules','Unpreserved Modules'),
                     name= " ", guide = guide_legend(reverse = F))
-  
+P4_Meth_bycate
+
 #scale_fill_discrete(name = "", labels = c('Preserved','Unpreserved'))
   #scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))
 
@@ -502,6 +502,7 @@ tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
      width = 14, height = 8, units = 'in', res = 500)
 print(P4_Meth_bycate)
 dev.off()
+
 
 ################  Figure 0 - background plots ####################
 mat <- matrix(c(1,1,1,2,2,2,rep(3,6)), nrow = 2, byrow = TRUE)
@@ -588,9 +589,6 @@ variable_names_lm <- list(
   'Promoter' = expression('Methprop'['REG']))
 
 variable_labeller_lm <- function(variable,value){ return(variable_names_lm[value]) } 
-
-
-
 
 genemeasure_vs_prop =
   ggplot(Diff_Coexp_plot_new,aes(x = `Methylation Proportion`,
