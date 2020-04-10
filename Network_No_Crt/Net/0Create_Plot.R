@@ -67,7 +67,7 @@ PresZsum =
   ggplot(MP_Stats_nobig, aes(moduleSize,Zsummary.pres,label = Row.names)) +
   geom_point(size = 5,aes(colour = Row.names))+
   geom_text_repel(vjust = -2)+
-  ggtitle("Preservation Zsummary") +
+  #ggtitle("Preservation Zsummary") +
   xlab("ModuleSize") + ylab("Zsummary") +
   theme(plot.title = element_text(hjust = 0.5,size=16, face="bold.italic"),
         axis.title.x = element_text(size=14, face="bold"),
@@ -80,21 +80,26 @@ PresMedianR =
 ggplot(MP_Stats_nobig, aes(moduleSize,medianRank.pres,label = Row.names)) +
   geom_point(size = 5,aes(colour = Row.names))+
   geom_text_repel(vjust = -2)+
-  ggtitle("Preservation Median Rank") +
+  #ggtitle("Preservation Median Rank") +
   xlab("ModuleSize") + ylab("Preservation Median Rank") +
   theme(plot.title = element_text(hjust = 0.5,size=16, face="bold.italic"),
         axis.title.x = element_text(size=14, face="bold"),
         axis.title.y = element_text(size=14, face="bold"))
 
-
+library(gridExtra)
 tiff("Fig2-Net-Presv-stats.tiff", width = 16, height = 10, units = 'in', res = 500)
 #PresZsum / PresMedianR
-ggarrange(PresZsum,PresMedianR,labels = c("A", "B"),ncol=2,nrow =1)
+# grid.arrange(PresZsum,PresMedianR,
+#              top = "Title",
+#              layout_matrix = matrix(c(1,2), ncol=2, byrow=TRUE))
+figure = ggarrange(PresZsum,PresMedianR,
+          labels = c("A", "B"),ncol=2,nrow =1)
+annotate_figure(figure,
+                top = text_grob("Module Preservation Statistics", color = "black", face = "bold", size = 20))
 # plot_grid(PresZsum,PresMedianR,
 #           align = c("h"),
 #           labels = c("A","B"), label_size= 20,label_colour = "black")
 dev.off()
-
 
 ####################  Fig3 Functional Enrich ###################
 library(openxlsx);library(tidyverse)
@@ -257,30 +262,27 @@ dev.off()
 # gene-rna = 20479 # no two low
 # gene-net (50%) = 7035
 
-length(unique(Associ_out_count_final$Gene))
-
-names(Total_C_count_raw)
-
-test = Total_C_count_raw %>% dplyr::select(-DOWNSTREAM) %>% 
-  mutate(rowsum =rowSums(.[2:7])) %>% 
-  dplyr::filter(!(rowsum == 0))
+alltf=c(Bta_TF_list,Bta_TcoF_list)
 
 
-length(which(test$rowsum ==0))
+
+table(alltf %in% Gene_net)
+
+table(alltf %in% Gene_list_Pre)
+table(alltf %in% Gene_list_Unpre)
+table(alltf %in% Gene_grey)
 
 
-sigflaggene = (unique(Associ_out_raw$Gene))
-allflaggene = (unique(Total_C_count_raw$Gene))
 
-Gene_all = unique(rownames(networkData_normalized))
-Gene_net = unique(rownames(networkData_50var_nocrt))
 
-length(Gene_net)
 
-table(Gene_all %in% allflaggene)
+test = Associ_out_all %>% dplyr::select(Gene) %>% unlist(use.names = F)
 
-table(Gene_net %in% allflaggene)
+lost = Gene_net[!(Gene_net %in% test)]
 
+table(lost %in% Gene_list_Pre)
+table(lost %in% Gene_list_Unpre)
+table(lost %in% Gene_grey)
 
 #
 save(UnPreserved_Gene_list,
@@ -292,6 +294,7 @@ ModuleSize = data.frame(Module = names(Gene_list_all),
 Overal_match_color = data.frame(Gene = colnames(datExpr_control),
                                 Module = moduleColors_control) %>% 
   mutate(Cate = ifelse(Module %in% ModuleName_Unpreserved,'Unp','Pre'))
+
 
 #Bta_TF_list;Bta_TcoF_list
 Gene_Meth_Viol = Meth_Prop_Univ %>% 
@@ -503,30 +506,29 @@ tiff("Fig4-Gene-TF-Methy-by-Cate.tiff",
 print(P4_Meth_bycate)
 dev.off()
 
-
 ################  Figure 0 - background plots ####################
-mat <- matrix(c(1,1,1,2,2,2,rep(3,6)), nrow = 2, byrow = TRUE)
-cex1
+#mat <- matrix(c(1,1,1,2,2,2,rep(3,6)), nrow = 2, byrow = TRUE)
 tiff("Fig0-Net-Constr-Background.tiff",width = 14, height = 8, units = 'in', res = 500)
-layout(mat)
-plot(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
+mat <- matrix(c(1,1,1,2,2,2,rep(3,6)), nrow = 2, byrow = TRUE);layout(mat);plot(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
      cex.main = 1.5,cex.lab=1.2,font.lab=2,
      xlab="Soft Threshold (power)",
      ylab="Scale Free Topology Model Fit",type="n",
      main = paste("Scale Independence"));text(sft_b_cl$fitIndices[,1], -sign(sft_b_cl$fitIndices[,3])*sft_b_cl$fitIndices[,2],
-                                                      labels=powers,cex=0.9,col="red");abline(h=0.80,col="red");plot(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5],
+                                                      labels=powers,cex=0.9,col="red");abline(h=0.80,col="red");mtext(side=3, line=-2.4, at=0.05,text="A.", cex = 1,adj=0, outer=T);plot(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5],
      cex.main = 1.5,cex.lab=1.2,font.lab=2,
      xlab="Soft Threshold (power)",ylab="Mean Connectivity",type="n",
-     main = paste("Mean connectivity"));text(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5], labels=powers, cex=.9,col="red");abline(h=MeanK_b,col="red");par(mar = c(1,4.1,4.1,2));plot(METree_control, 
+     main = paste("Mean connectivity"));text(sft_b_cl$fitIndices[,1], sft_b_cl$fitIndices[,5], labels=powers, cex=.9,col="red");abline(h=MeanK_b,col="red");par(mar = c(1,4.1,4.1,2));mtext(side=3,line=-2.4,at=0.5,cex = 1,text="B.", adj=0, outer=T);plot(METree_control, 
      cex.main = 1.5,cex.lab=1.2,font.lab=2,
      main = "Clustering of Initial MEs (Control Diet)",
      xlab = '', sub = "", ylab = "Height",
-     hang = -1,cex = 0.6);MEDissThres = 0.2;abline(h = MEDissThres, col = "red")
+     hang = -1,cex = 0.6);MEDissThres = 0.2;abline(h = MEDissThres, col = "red");mtext(side=3, line=-32, at=0.05,cex = 1,text="C.", adj=0, outer=T);
 #axis(side = 2, at = seq(0,1,.2), col = "#F38630",labels = FALSE, lwd = 2)
 dev.off()
-
-
-
+# 
+# plot(rnorm(10))
+# mtext(side=3, line=-3,at=0.05,
+#       text="Here again?", adj=0, outer=T)
+getwd()
 
 ################  Files -  ####################
 ################  1. gene measure ments

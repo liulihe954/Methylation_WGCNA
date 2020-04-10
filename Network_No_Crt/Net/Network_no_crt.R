@@ -32,6 +32,11 @@ for (i in seq_along(raw_data_index)){
 }
 data_expr_all_with0 = data_expr_all_raw[,c(which(substr(raw_data_index,2,5) %in% control_index),which(substr(raw_data_index,2,5) %in% treatment_index))]
 
+# test = c()
+# for (i in seq_along(rownames(data_expr_all_with0))){
+#   test[i] = rowSums(data_expr_all_with0[i,])
+# }
+
 ##########################################################################
 setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
 networkData_final  =  DataPre_C(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10,
@@ -178,6 +183,7 @@ colorOrder = c("grey", standardColors())
 moduleLabels_control = match(moduleColors_control, colorOrder) -1;
 MEs_control = mergedMEs_control
 length(table(moduleLabels_control))
+(table(moduleColors_control))
 # Save module colors and labels for use in subsequent parts
 save(MEs_control, moduleLabels_control, 
      moduleColors_control, geneTree_control, file = "module_colorsNlabels_control.RData")
