@@ -249,9 +249,10 @@ for (i in seq_along(Diff_Coexp$Gene)){
   row_loc = which(datKME$Gene == target)
   col_loc = which(names(datKME) == sub)
   # assign
-  Diff_Coexp[i,8] = datKME[row_loc,col_loc]
+  Diff_Coexp[i,9] = datKME[row_loc,col_loc]
 }
-names(Diff_Coexp)[8] = 'Module Membership'
+names(Diff_Coexp)[9] = 'Module Membership'
+Diff_Coexp$`Module Membership` = as.numeric(Diff_Coexp$`Module Membership`)
 
 
 print(
@@ -1017,7 +1018,7 @@ Bta_TF_OverlapMatch = OverlapOut %>%
   mutate(OverPerc = OverNum/Size) %>% as_tibble() %>% 
   group_by(TF_Name) %>% 
   #dplyr::filter(OverNum == max(OverNum)) %>% sample_n(1) %>% 
-  dplyr::filter(OverPerc == max(OverPerc)) %>% sample_n(1) %>% 
+  dplyr::filter(OverPerc == max(OverPerc)) %>% sample_n(1) #%>% 
   dplyr::filter(DataBase != 'Marbach2016_cr')
 
 #
