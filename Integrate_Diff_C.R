@@ -42,7 +42,8 @@ load('All_Cs.rda')
 chr_index = paste(rep('chr',30),c(seq(1,29),'X'),sep = "")
 SeqC_all = getData(data) %>% 
   mutate_at(vars(chr),as.character) %>% 
-  dplyr::filter(chr %in% chr_index) # 5136556
+  dplyr::filter(chr %in% chr_index) #
+dim(SeqC_all) #  5136556
 
 #
 SeqC_all_BED = SeqC_all %>% 

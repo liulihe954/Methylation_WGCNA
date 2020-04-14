@@ -43,65 +43,95 @@ transpose_df <- function(df) {
     `rownames<-`(NULL)
   return(t_df)
 }
+
+rgmatch_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch'
+setwd(rgmatch_loci)
+
+Associ_out_all_raw = read.table('myassociations_all.txt',header = TRUE,stringsAsFactors = FALSE)
+Associ_out_sig_raw = read.table('myassociations_sig.txt',header = TRUE,stringsAsFactors = FALSE)
+
 #
-# Associ_out_all_raw = read.table('myassociations_all.txt',header = TRUE,stringsAsFactors = FALSE)
-# Associ_out_sig_raw = read.table('myassociations_sig.txt',header = TRUE,stringsAsFactors = FALSE)
-# 
-# #
-# Associ_out_all = Associ_out_all_raw %>%
-#   dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
-#   group_by(Gene) %>%
-#   dplyr::count(Area) %>%
-#   tidyr::spread(key = Gene, value = n) %>%
-#   transpose_df() %>%
-#   replace(is.na(.), 0) %>%
-#   mutate_at(vars(-Area), as.numeric) %>%
-#   dplyr::rename(Gene = Area) %>% # 24344
-#   mutate(Count_Prpt =  PROMOTER + TSS + UPSTREAM) %>%
-#   mutate(Count_Body =  `1st_EXON`+ GENE_BODY + INTRON) %>%
-#   mutate(Count_All = Count_Prpt + Count_Body) %>%
-#   dplyr::select(Gene,Count_Prpt,Count_Body,Count_All)
-# 
-# 
-# Associ_out_sig = Associ_out_sig_raw %>%
-#   dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
-#   group_by(Gene) %>%
-#   dplyr::count(Area) %>%
-#   tidyr::spread(key = Gene, value = n) %>%
-#   transpose_df() %>%
-#   replace(is.na(.), 0) %>%
-#   mutate_at(vars(-Area), as.numeric) %>%
-#   dplyr::rename(Gene = Area) %>% # 10247
-#   mutate(Count_Prpt =  PROMOTER + TSS + UPSTREAM) %>%
-#   mutate(Count_Body =  `1st_EXON`+ GENE_BODY + INTRON) %>%
-#   mutate(Count_All = Count_Prpt + Count_Body) %>%
-#   dplyr::select(Gene,Count_Prpt,Count_Body,Count_All)
-# #
-# #setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch')
-# 
-# Associ_out_sig_out = Diff_C_Sig %>% 
-#   dplyr::select(chr,start,qvalue,meth.diff) %>% 
-#   left_join(dplyr::select(Associ_out_sig_raw,Midpoint,Gene,Area),
-#             by = c('start'='Midpoint')) %>% 
-#   replace_na(list(Gene = '-', Area = "INTERGENIC")) %>% 
-#   as_tibble()
-# 
-# Associ_out_all_count = Associ_out_all_raw %>%
-#   #dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
-#   group_by(Gene) %>%
-#   dplyr::count(Area) %>%
-#   tidyr::spread(key = Gene, value = n) %>%
-#   transpose_df() %>%
-#   replace(is.na(.), 0) %>%
-#   mutate_at(vars(-Area), as.numeric) %>%
-#   dplyr::rename(Gene = Area) %>% 
-#   as_tibble()
-# 
-# require(openxlsx)
-# list_of_datasets <- 
-#   list("Associations of Diff Meth CpGs" = Associ_out_sig_out,
-#        "Diff Meth CpGs Counts by Region" = Associ_out_all_count)
-# write.xlsx(list_of_datasets, file = "CpG_asso_count.xlsx")
+Associ_out_all_raw = as_tibble(Associ_out_all_raw)
+Associ_sig_sig_raw = as_tibble(Associ_out_sig_raw)
+
+outtt = Associ_sig_sig_raw[Associ_sig_sig_raw$Midpoint == 76077,]
+
+head(Associ_out_sig_raw)
+
+length(unique(Associ_sig_sig_raw$Region))
+
+test = Associ_sig_sig_raw %>% 
+  group_by(Midpoint) %>% 
+  count(Gene)
+
+
+
+
+
+
+#
+Associ_out_all = Associ_out_all_raw %>%
+  #dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
+  group_by(Gene) %>%
+  dplyr::count(Area) %>%
+  tidyr::spread(key = Gene, value = n) %>%
+  transpose_df() %>%
+  mutate_at(vars(-Area), as.numeric) %>%
+  replace(is.na(.), 0) %>%
+  dplyr::rename(Gene = Area) %>% # 24344
+  mutate(Count_Prpt =  PROMOTER + TSS + UPSTREAM) %>%
+  mutate(Count_Body =  `1st_EXON`+ GENE_BODY + INTRON) %>%
+  mutate(Count_All = Count_Prpt + Count_Body) %>%
+  dplyr::select(Gene,Count_Prpt,Count_Body,Count_All)
+
+
+Associ_out_sig = Associ_out_sig_raw %>%
+  #dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
+  group_by(Gene) %>%
+  dplyr::count(Area) %>%
+  tidyr::spread(key = Gene, value = n) %>%
+  transpose_df() %>%
+  mutate_at(vars(-Area), as.numeric) %>%
+  replace(is.na(.), 0) %>%
+  dplyr::rename(Gene = Area) %>% # 10247
+  mutate(Count_Prpt =  PROMOTER + TSS + UPSTREAM) %>%
+  mutate(Count_Body =  `1st_EXON`+ GENE_BODY + INTRON) %>%
+  mutate(Count_All = Count_Prpt + Count_Body) %>%
+  dplyr::select(Gene,Count_Prpt,Count_Body,Count_All)
+#
+#setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch')
+
+Associ_out_sig_out = Diff_C_Sig %>%
+  dplyr::select(chr,start,qvalue,meth.diff) %>%
+  left_join(dplyr::select(Associ_out_sig_raw,Midpoint,Gene,Area),
+            by = c('start'='Midpoint')) %>%
+  replace_na(list(Gene = '-', Area = "INTERGENIC")) %>%
+  as_tibble()
+
+x1 = Associ_out_sig_raw %>% dplyr::select(Midpoint) %>% unlist(use.names = F)
+x2 = Diff_C_Sig %>% dplyr::select(start) %>% unlist(use.names = F)
+head(Associ_out_sig_out[duplicated(Associ_out_sig_out$start),])
+Associ_out_sig_out[(which(table(Associ_out_sig_out$start) == 12)),]
+
+
+Associ_out_all_count = Associ_out_all_raw %>%
+  #dplyr::filter(!(Area == 'DOWNSTREAM')) %>%
+  group_by(Gene) %>%
+  dplyr::count(Area) %>%
+  tidyr::spread(key = Gene, value = n) %>%
+  transpose_df() %>%
+  mutate_at(vars(-Area), as.numeric) %>%
+  replace(is.na(.), 0) %>%
+  dplyr::rename(Gene = Area) %>%
+  as_tibble()
+
+
+require(openxlsx)
+list_of_datasets <-
+  list("Associations of Diff Meth CpGs" = Associ_out_sig_out,
+       "Diff Meth CpGs Counts by Region" = Associ_out_all_count)
+write.xlsx(list_of_datasets, file = "CpG_asso_count.xlsx")
+
 # 
 # 
 # "/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y))
