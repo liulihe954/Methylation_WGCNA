@@ -63,14 +63,12 @@ load('network_final.RData')
 ##        Myth_extent porp            ##
 ######========================##########
 # gene pre
-# setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
+setwd('/Users/liulihe95/Desktop/Methionine/Network_No_Crt/Net/')
 library(readxl)
 library(tidyverse)
-# DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
-# DiffC2Gene.extend = DiffC2Gene_raw %>%
-#   dplyr::filter(Gene != '-')
-
-
+DiffC2Gene_raw = read_xlsx('DiffC_Gene.xlsx')
+DiffC2Gene.extend = DiffC2Gene_raw %>%
+  dplyr::filter(Gene != '-')
 
 
 # genome pre
