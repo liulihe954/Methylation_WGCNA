@@ -61,6 +61,13 @@ setwd("/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/enrich_resul
 write.xlsx(all_go_results,file = "GO_Results_all_0113.xlsx")
 
 
+tmp = read.xlsx('Supplementary_File.xlsx',sheet = 1)
+write.xlsx(tmp,file = 'Supplementary_File1_MappingStats.xlsx')
+write.xlsx(tmp,file = 'Supplementary_File2_ModulePreservationStats.xlsx')
+write.xlsx(tmp,file = 'Supplementary_File3_GeneMeasurements.xlsx')
+write.xlsx(tmp,file = 'Supplementary_File4_GeneCpGCountByRegion.xlsx')
+write.xlsx(tmp,file = 'Supplementary_File5_DiffMethCpGAssociations.xlsx')
+
 # 
 # library(openxlsx)
 # library(tidyverse)
