@@ -180,30 +180,90 @@ for (i in seq_along(ModuleName_Unpreserved)){
 }
 library(gplots)
 #
-item_index = c(1,4,30,56,70,212,461,8,9,11,48,235,28,74,18,65,47,50)
-item_cate_func = c(rep('ribosomal',7),rep('Mitochondrial',5),rep('ATP',2),rep('rRNA',2),rep('NAD(P)H',2))
-length(item_index)
 
+item_id = c('M17315','M15206', # myogenesis
+            'M19251','M6100', #  adipogenesis
+            'GO:0090090','R-BTA-3858494','M27539',# wnt
+            'GO:0003735','GO:0015935','R-BTA-72702','IPR011332',# ribosom
+            'GO:0019843','R-BTA-72312', #rna
+            'GO:0005743','GO:0005747','M22379', # Mitochondrial 
+            'GO:0015986','R-BTA-163200', # atp
+            'D016660','M12919' # NADPH
+            )
+
+library(rio)
+antiquewhile_enrichsummary_plot_raw = 
+  import_list("Enrich_results_summary.xlsx", setclass = "tbl",rbind = TRUE) %>% 
+  dplyr::filter(ID %in% item_id) 
+antiquewhile_enrichsummary_plot_raw = 
+  antiquewhile_enrichsummary_plot_raw[match(item_id,antiquewhile_enrichsummary_plot_raw$ID),]
+
+#item_index = c(1,4,30,56,70,212,461,8,9,11,48,235,28,74,18,65,47,50)
+item_cate_func = c(rep('myogenesis',2),rep('adipogenesis',2),
+                   rep('Wnt',3),rep('ribosome',4),
+                   rep('rRNA',2),rep('mitochondrial',3),
+                   rep('atp',2),rep('DNAPH',2))
+
+library(gplots)
 antiquewhile_enrichsummary_plot = 
-  read.xlsx('Enrich_results_summary.xlsx',sheet = 1) %>% 
-  slice(item_index) %>% mutate(Func_cate = item_cate_func) %>% 
+  antiquewhile_enrichsummary_plot_raw %>% 
+  mutate(Func_cate = item_cate_func) %>% 
   mutate(Ylable = paste0('[',ID,']',':',Name,'(',Total_Genes,')')) %>% 
   mutate(ID_Y = paste0('[',ID,']',' (',Total_Genes,')')) %>% 
   mutate(log10pvalue = -log10(pvalue_r)) %>% 
   mutate_at('Func_cate',fct_infreq) %>% 
   mutate(fill_plot = as.character(recode(Func_cate,
-                            ribosomal = col2hex('red'),
-                            Mitochondrial = col2hex('blue'),
-                            ATP = col2hex('green'),
-                            `NAD(P)H` = col2hex('orange'),
-                            rRNA = col2hex('purple'))))
+                                         myogenesis = col2hex('red'),
+                                         adipogenesis = col2hex('rosybrown'),
+                                         Wnt = col2hex('blue'),
+                                         ribosome = col2hex('chartreuse4'),
+                                         rRNA = col2hex('salmon4'),
+                                         mitochondrial = col2hex('cyan1'),
+                                         atp = col2hex('orange'),
+                                         DNAPH = col2hex('purple')))) %>% 
+  
+  mutate(Func_cate=recode(Func_cate,
+                          `myogenesis` = "Myogenesis",
+                          `adipogenesis` = "Adipogenesis",
+                          `Wnt` = "Wnt Pathway",
+                          `ribosome` = "Ribosome Structure",
+                          `mitochondrial` = "Mitochondrial Activity",
+                          `atp` = "ATP Synthesis",
+                          `DNAPH` = "NAD(P)H Oxidoreductase",
+                          `rRNA` = "rRNA Activity"))
+  # mutate(fill_plot2 = as.character(recode(Func_cate,
+  #                                         myogenesis = 'red',
+  #                                         adipogenesis = 'rosybrown',
+  #                                         Wnt = 'blue',
+  #                                         ribosome = 'chartreuse4',
+  #                                         rRNA = 'salmon4',
+  #                                         mitochondrial = 'cyan1',
+  #                                         atp = 'orange',
+  #                                         DNAPH = 'purple')))
+
+
 antiquewhile_enrichsummary_plot$ID_Y =
   factor(antiquewhile_enrichsummary_plot$ID_Y,
-         levels = rev(c('[R-BTA-72706] (66)','[R-BTA-72702] (42)','[M17739] (585)','[M14381] (310)','[IPR011332] (8)','[GO:0022627] (45)','[GO:0003735] (157)',
-                    '[R-BTA-6791226] (99)','[GO:0019843] (30)',
-                    '[R-BTA-163200] (52)','[GO:0015986] (17)',
-                    '[M11099] (68)','[GO:0032981] (34)','[GO:0005753] (18)','[GO:0005743] (224)','[D025261] (19)',
-                    '[D016660] (39)','[D009247] (38)')))
+         levels = rev(c("[M17315] (33)","[M15206] (45)", # myogenesis
+                        "[M19251] (40)","[M6100] (122)", # Adipogenesis
+                        "[GO:0090090] (53)","[R-BTA-3858494] (57)","[M27539] (54)",# wnt
+                        "[GO:0003735] (157)","[GO:0015935] (21)","[R-BTA-72702] (42)","[IPR011332] (8)",# ribosom
+                        "[GO:0019843] (30)","[R-BTA-72312] (99)", #rna
+                        "[GO:0005743] (224)","[GO:0005747] (37)","[M22379] (43)",# Mitochondrial 
+                        "[GO:0015986] (17)","[R-BTA-163200] (52)", # atp
+                        "[D016660] (39)","[M12919] (106)"# NADPH
+                        )))
+
+
+antiquewhile_enrichsummary_plot$Func_cate =
+  factor(antiquewhile_enrichsummary_plot$Func_cate,
+         levels = (c("Myogenesis","Adipogenesis","Wnt Pathway","Ribosome Structure","rRNA Activity",
+                        "Mitochondrial Activity","ATP Synthesis","NAD(P)H Oxidoreductase")))
+
+
+
+#  [R-BTA-72706] (66)
+
 colorindex = as.character(antiquewhile_enrichsummary_plot$fill_plot)
 
 # 
@@ -227,30 +287,37 @@ colorindex = as.character(antiquewhile_enrichsummary_plot$fill_plot)
 # table(color$fill)
 
 #fill_plot = as.vector(antiquewhile_enrichsummary_plot$fill_plot)
-ggEnrich = ggplot()+
-  geom_bar(antiquewhile_enrichsummary_plot,
-           mapping = aes(x = ID_Y, y = hitsPerc),
-           fill = colorindex, ## colour = fill_plot,fill = rep('#619CFF',18)
+
+
+
+
+ggEnrich = 
+  ggplot(antiquewhile_enrichsummary_plot) + coord_flip()+
+  geom_bar(mapping = aes(x = ID_Y, y = hitsPerc,fill = Func_cate),#
            stat = "identity", width=0.2) +
-  #scale_colour_manual(values= colorindex) +
-  #scale_fill_manual(values = fill_plot)+
+  guides(fill=guide_legend(title=" ",keywidth = 1, nrow = 2,
+                           keyheight = 1,title.position = "right"))+
   scale_y_continuous(name = expression(bold("Percentage of Significant Genes")),
-                     sec.axis = sec_axis(~.* 30/100, name = expression(bold("-log10(P-value)"))),
-                     limits = c(0,100), breaks = seq(0,100,by=5))+
-  geom_point(antiquewhile_enrichsummary_plot,
-             mapping = aes(x = ID_Y,y = log10pvalue*100/30,fill = Func_cate)) +
-  theme(legend.position="none",
+                   sec.axis = sec_axis(~.* 30/100, name = expression(bold("-log10(P-value)"))),
+                   limits = c(0,100), breaks = seq(0,100,by=5))+
+  theme(legend.position="bottom",
+        legend.text=element_text(size=10,face="bold",color = "black"),
+        #legend.title=element_text(size=10),
         axis.title.y = element_blank(),
         axis.text.y = element_text(size=8,face="bold",color = "black"),
-        axis.text.x = element_text(size=10,face="bold",color = "black")) + 
-  coord_flip()
+        axis.text.x = element_text(size=10,face="bold",color = "black"))+
+  geom_point(mapping = aes(x = ID_Y,y = log10pvalue*100/30))
+
 ggEnrich
 
+#ggplot_build(ggEnrich)
 
 #F8766D #00BFC4
-tiff("Fig3-Enrichment-Bar.tiff", width = 10, height = 6, units = 'in', res = 500)
+tiff("Fig4-Enrichment-Bar.tiff", width = 10, height = 6, units = 'in', res = 500)
+#tiff("Fig3-Enrichment-Bar.tiff", width = 10, height = 6, units = 'in', res = 500)
 print(ggEnrich)
 dev.off()
+
 
 ####################  Fig4 Methylation Prop ###################
 
