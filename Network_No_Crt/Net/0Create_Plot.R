@@ -289,8 +289,6 @@ colorindex = as.character(antiquewhile_enrichsummary_plot$fill_plot)
 #fill_plot = as.vector(antiquewhile_enrichsummary_plot$fill_plot)
 
 
-
-
 ggEnrich = 
   ggplot(antiquewhile_enrichsummary_plot) + coord_flip()+
   geom_bar(mapping = aes(x = ID_Y, y = hitsPerc,fill = Func_cate),#
@@ -871,51 +869,62 @@ tiff("Fig6-forcely-assgin-tf.tiff",
 print(Force_assign)
 dev.off()
 
-#### 
-ks.test(male,female)
-wilcox.test(male,female) 
-
-
+####
 
 Gene_Unp_All = Gene_Meth_Viol %>% 
-  dplyr::filter(Cate == 'Unp',TFinfo == 'NOT') %>% 
+  dplyr::filter(Cate == 'Unp') %>% 
   dplyr::select(Prop_Body) %>% 
   unlist(use.names = F)
+
+
 
 Gene_Unp_Prmp = Gene_Meth_Viol %>% 
-  dplyr::filter(Cate == 'Unp',TFinfo == 'NOT') %>% 
+  dplyr::filter(Cate == 'Unp') %>% 
   dplyr::select(Prop_Prpt) %>% 
   unlist(use.names = F)
 
+
 Gene_Pre_All = Gene_Meth_Viol %>% 
-  dplyr::filter(Cate == 'Pre',TFinfo == 'NOT') %>% 
+  dplyr::filter(Cate == 'Pre') %>% 
   dplyr::select(Prop_Body) %>% 
   unlist(use.names = F)
 
+
+
 Gene_Pre_Prmp = Gene_Meth_Viol %>% 
-  dplyr::filter(Cate == 'Pre',TFinfo == 'NOT') %>% 
+  dplyr::filter(Cate == 'Pre') %>% 
   dplyr::select(Prop_Prpt) %>% 
   unlist(use.names = F)
+
+
+#
 
 TF_Unp_All  = Gene_Meth_Viol %>% 
   dplyr::filter(Cate == 'Unp',TFinfo != 'NOT') %>% 
   dplyr::select(Prop_Body) %>% 
   unlist(use.names = F)
 
+
+
 TF_Unp_Prmp = Gene_Meth_Viol %>% 
   dplyr::filter(Cate == 'Unp',TFinfo != 'NOT') %>% 
   dplyr::select(Prop_Prpt) %>% 
   unlist(use.names = F)
+
+
 
 TF_Pre_All = Gene_Meth_Viol %>% 
   dplyr::filter(Cate == 'Pre',TFinfo != 'NOT') %>% 
   dplyr::select(Prop_Body) %>% 
   unlist(use.names = F)
 
+
+
 TF_Pre_Prmp = Gene_Meth_Viol %>% 
   dplyr::filter(Cate == 'Pre',TFinfo != 'NOT') %>% 
   dplyr::select(Prop_Prpt) %>% 
   unlist(use.names = F)
+
 
 # KS test
 a = ks.test(Gene_Pre_All,Gene_Unp_All)
