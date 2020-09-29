@@ -2,13 +2,13 @@
 ##===============================================================================##
 ##                                0.Data pre                                     ## 
 ##===============================================================================##
-setwd("/blue/penagaricano/lihe.liu/Methylation_WGCNA")
+setwd("/blue/mateescu/lihe.liu/Methylation_WGCNA")
 source("Function_Source.R")
 sample_index =read_excel("Samples_RNA-Seq.xlsx")
 control_index = dplyr::filter(sample_index,TRT == "a") %>% dplyr::select('Tube ID') %>% unlist(use.names = F)
 treatment_index = dplyr::filter(sample_index,TRT == "b") %>%  dplyr::select('Tube ID') %>% unlist(use.names = F)
 
-setwd("/blue/penagaricano/lihe.liu/Methylation_WGCNA/counts/")
+setwd("/blue/mateescu/lihe.liu/Methylation_WGCNA/counts/")
 #test = read.csv("M6228-1.counts.raw.txt",sep = "\t",header = F) %>% dplyr::slice(1:(n()-5))
 #test2 = read.csv("M6228-2.counts.raw.txt",sep = "\t",header = F) %>% dplyr::slice(1:(n()-5))
 #sum(test$V2) > sum(test2$ V2) # use 1
@@ -38,7 +38,7 @@ data_expr_all_with0 = data_expr_all_raw[,c(which(substr(raw_data_index,2,5) %in%
 # }
 
 ##########################################################################
-setwd("/blue/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
+setwd("/blue/mateescu/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net")
 networkData_final  =  DataPre_C(data_expr_all_with0, cousin = 0.4, n1 = 9, n2 = 10,
                                 perct = 0.5,thres_rmzero = 5,count_rmzero = 9,Correct='N')
 network_final = data.frame(networkData_final[[1]])

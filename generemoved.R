@@ -1,0 +1,56 @@
+test = data_expr_all_with0 %>%
+  mutate(rowsume = rowSums(.))
+rownames(test) = rownames(data_expr_all_with0)
+
+sort_out = test %>% 
+  arrange(rowsume)
+
+select = tail(sort_out,25)
+dim(select)
+
+total1 = sum(sort_out$rowsume)
+total2 = sum(select$rowsume)
+
+total2/total1
+
+
+foridmatch = rownames(select)
+
+foridmatch = 
+  c("ENSBTAG00000011392","ENSBTAG00000008683","ENSBTAG00000054745",
+    "ENSBTAG00000009703","ENSBTAG00000001601","ENSBTAG00000010880",
+    "ENSBTAG00000006999","ENSBTAG00000020080","ENSBTAG00000006907",
+    "ENSBTAG00000022244","ENSBTAG00000021218","ENSBTAG00000007090",
+    "ENSBTAG00000001032","ENSBTAG00000046725","ENSBTAG00000009707",
+    "ENSBTAG00000006541","ENSBTAG00000005534","ENSBTAG00000011424",
+    "ENSBTAG00000022158","ENSBTAG00000005373","ENSBTAG00000014731",
+    "ENSBTAG00000013921","ENSBTAG00000012927","ENSBTAG00000018204",
+    "ENSBTAG00000046332")
+
+
+foridmatch = 
+  c("ENSBTAG00000011392","ENSBTAG00000008683","ENSBTAG00000054745",
+    "ENSBTAG00000009703","ENSBTAG00000001601","ENSBTAG00000010880",
+    "ENSBTAG00000006999","ENSBTAG00000020080","ENSBTAG00000006907",
+    "ENSBTAG00000022244","ENSBTAG00000021218","ENSBTAG00000007090",
+    "ENSBTAG00000001032","ENSBTAG00000046725","ENSBTAG00000009707",
+    "ENSBTAG00000006541","ENSBTAG00000005534","ENSBTAG00000011424",
+    "ENSBTAG00000022158","ENSBTAG00000005373","ENSBTAG00000014731",
+    "ENSBTAG00000013921","ENSBTAG00000012927","ENSBTAG00000018204",
+    "ENSBTAG00000046332")
+library(tidyverse)
+
+install.packages("HGNChelper")
+library(HGNChelper)
+
+GeneInfo = convertNformatID(GeneSetNames=c("tst"),
+                            SigGene_list = list(foridmatch),
+                            TotalGene_list = list(foridmatch),
+                            IDtype = "ens")
+
+
+library(xlsx)
+GeneInfo %>%
+  data.frame() %>%
+  write.xlsx(file = 'FileNameYouPrefer.xlsx')
+getwd()
