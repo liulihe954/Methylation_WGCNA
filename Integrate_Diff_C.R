@@ -1,6 +1,6 @@
 # dataset pre
 options(stringsAsFactors = FALSE)
-data_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA'
+data_loci = '/blue/mateescu/lihe.liu/Methylation_WGCNA'
 setwd(data_loci)
 load("methCov08Stat.rda")
 library(tidyverse)
@@ -15,7 +15,9 @@ Diff_C_all = getData(methCov08Stat) %>%
 library(readxl)
 Diff_C_Sig = Diff_C_all %>% 
   dplyr::filter(qvalue <= 0.10,abs(meth.diff) >= 20)
-dim(Diff_C_Sig)
+dim(Diff_C_Sig) # 101094
+
+#save(Diff_C_all,Diff_C_Sig,file = 'Meth_Diff_CpG_Universe.rda')
 
 # make bed file
 Diff_C_Sig_BED = Diff_C_Sig  %>% 
@@ -37,14 +39,14 @@ setwd(data_loci)
 ## ================================================================================================================== ##
 
 #Count all Cs
-setwd('/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/MethEval')
+setwd('/blue/mateescu/lihe.liu/Methylation_WGCNA/Network_No_Crt/MethEval')
 load('All_Cs.rda')
 chr_index = paste(rep('chr',30),c(seq(1,29),'X'),sep = "")
 SeqC_all = getData(data) %>% 
   mutate_at(vars(chr),as.character) %>% 
   dplyr::filter(chr %in% chr_index) #
 dim(SeqC_all) #  5136556
-
+head(SeqC_all)
 #
 SeqC_all_BED = SeqC_all %>% 
   dplyr::select(chr,start,end)
