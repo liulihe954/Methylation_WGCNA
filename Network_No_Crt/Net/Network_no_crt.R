@@ -32,6 +32,8 @@ for (i in seq_along(raw_data_index)){
 }
 data_expr_all_with0 = data_expr_all_raw[,c(which(substr(raw_data_index,2,5) %in% control_index),which(substr(raw_data_index,2,5) %in% treatment_index))]
 
+#save(control_index,treatment_index,data_expr_all_with0,file = 'Meth_Expression_Raw.rda')
+
 # test = c()
 # for (i in seq_along(rownames(data_expr_all_with0))){
 #   test[i] = rowSums(data_expr_all_with0[i,])

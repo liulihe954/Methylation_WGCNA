@@ -25,6 +25,30 @@ Diff_C_Sig_BED = Diff_C_Sig  %>%
 Diff_C_Sig_BED[,1] = str_replace(Diff_C_Sig_BED[,1],'chr','') # 101094 
 colnames(Diff_C_Sig_BED) = NULL
 
+# 
+# # for alt_splicing # 03022021
+# # make bed file
+# library(readxl)
+# Diff_C_Sig_4alt = Diff_C_all %>% 
+#   dplyr::filter(pvalue <= 0.01)
+# dim(Diff_C_Sig_4alt) # 
+# 
+# Diff_C_Sig_BED_4alt = Diff_C_Sig_4alt  %>% 
+#   dplyr::select(chr,start,end)
+# Diff_C_Sig_BED_4alt[,1] = str_replace(Diff_C_Sig_BED_4alt[,1],'chr','') #
+# colnames(Diff_C_Sig_BED_4alt) = NULL
+# # rgmatch loci
+# #rgmatch_loci = '/ufrc/penagaricano/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch'
+# rgmatch_loci = '/blue/mateescu/lihe.liu/Methylation_WGCNA/Network_No_Crt/Net/rgmatch'
+# setwd(rgmatch_loci)
+# write.table(Diff_C_Sig_BED_4alt, file='Diff_C_Sig_BED_4alt.bed', row.names = F,quote=FALSE, sep='\t')
+# setwd(data_loci)
+# ## ================================================================================================================== ##
+# #   python rgmatch.py -g Bos_taurus.ARS-UCD1.2.99.gtf -b Diff_C_Sig_BED_4alt.bed -r 'gene' -q 3 -o myassociations_sig_4alt.txt  ##
+# ## ================================================================================================================== ##
+
+
+
 # TEST_Diff_C = read.xlsx('DiffC_Gene.xlsx')
 # table(TEST_Diff_C$Chromosome)
 # length(unique(TEST_Diff_C$Position))
